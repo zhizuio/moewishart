@@ -4,12 +4,24 @@
 \alias{simData}
 \title{Simulate data}
 \usage{
-simData(n = 200, p = 2, pis = c(0.4, 0.6), nus = c(8, 12), Sigma = NULL)
+simData(
+  n = 200,
+  p = 2,
+  Xq = 0,
+  K = NA,
+  pis = c(0.4, 0.6),
+  nus = c(8, 12),
+  Sigma = NULL
+)
 }
 \arguments{
 \item{n}{number of observations}
 
 \item{p}{dimension of the Wishart distribution}
+
+\item{Xq}{number of covariates for modeling subpopulation probabilities}
+
+\item{K}{number of latent components}
 
 \item{pis}{vector of probabilities of subpopulations}
 
@@ -23,6 +35,7 @@ An object of a list
 \item "\code{S}" - a list of covariance matrices
 \item "\code{z}" - a vector of probabilities
 \item "\code{Sigma_list}" - a list of scale matrices of the Wishart distribution
+\item "\code{X}" - a matrix or NULL of covariates
 }
 }
 \description{
