@@ -13,6 +13,7 @@ mewishart(
   alpha = NULL,
   nu0 = NULL,
   Psi0 = NULL,
+  init_pi = NULL,
   init_nu = NULL,
   sample_nu = TRUE,
   nu_prior_a = 2,
@@ -37,6 +38,8 @@ mewishart(
 \item{nu0}{TBA}
 
 \item{Psi0}{TBA}
+
+\item{init_pi}{TBA}
 
 \item{init_nu}{TBA}
 

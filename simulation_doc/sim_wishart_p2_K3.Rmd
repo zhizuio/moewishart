@@ -34,7 +34,7 @@ Modeling:
 
 
 
-```{r, results='hide'}
+```{r}
 rm(list = ls())
 
 library(mewishart)
@@ -57,19 +57,24 @@ my_K_intial <- 3
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
 fit <- mewishart(S_list,
-  K = my_K_intial,
+  K = my_K_intial, init_pi = c(0.45, 0.40, 0.15),
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
 end_time <- Sys.time()
 elapsed_time <- end_time - start_time
+elapsed_time
 ```
 
 <br> 
 
 ```{r}
 # posterior summaries
-colMeans(fit$pi)
-apply(fit$nu, 2, mean)
+colMeans(fit$pi) # estimated pi
+colMeans(dat$pi) # true pi
+
+apply(fit$nu, 2, mean) # estimated nu
+dat$nu # true nu
+
 # Sum all arrays in the list and divide by the number of saved iterations
 sigma_posterior_mean <- Reduce("+", fit$Sigma) / length(fit$Sigma)
 # View the mean covariance matrix for Cluster 1
@@ -80,4 +85,24 @@ as.data.frame(Sigma_list)
 
 (a1 <- apply(sigma_posterior_mean, MARGIN = 3, function(aa) min(sapply(Sigma_list, function(x) sum((aa - x)^2)))))
 ```
+
+## Check identifiability issue
+
+```{r}
+# re-run the model with wrong initial weights to check identifiability issue
+set.seed(123)
+fit2 <- mewishart(S_list,
+  K = my_K_intial, init_pi = c(0.15, 0.40, 0.45),
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+)
+
+colMeans(fit2$pi) # estimated pi
+colMeans(dat$pi) # true pi
+
+apply(fit2$nu, 2, mean) # estimated nu
+dat$nu # true nu
+```
+
+
+
 

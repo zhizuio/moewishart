@@ -16,6 +16,7 @@
 #' @param alpha TBA
 #' @param nu0 TBA
 #' @param Psi0 TBA
+#' @param init_pi TBA
 #' @param init_nu TBA
 #' @param sample_nu TBA
 #' @param nu_prior_a TBA
@@ -43,6 +44,7 @@ mewishart <- function(S_list,
                       alpha = NULL,
                       nu0 = NULL,
                       Psi0 = NULL,
+                      init_pi = NULL,
                       init_nu = NULL,
                       sample_nu = TRUE,
                       nu_prior_a = 2,
@@ -81,7 +83,14 @@ mewishart <- function(S_list,
   km <- kmeans(S_mat, centers = K, nstart = 5)
   z <- km$cluster
 
-  pi_k <- table(factor(z, levels = 1:K)) / n
+  if (is.null(init_pi)) {
+    pi_k <- table(factor(z, levels = 1:K)) / n
+  } else {
+    if (length(init_pi) != K || sum(init_pi) != 1) {
+      stop("Please specify correct 'init_pi'!")
+    }
+    pi_k <- init_pi
+  }
   Sigma_k <- array(0, c(p, p, K))
   nu_k <- init_nu
 

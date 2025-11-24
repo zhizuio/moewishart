@@ -1,0 +1,97 @@
+---
+title: "Simulation study: mixture of experts model to check identifiability"
+author: "The Tien Mai & Zhi Zhao"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document
+---
+
+```{css, echo=FALSE}
+pre code {
+  white-space: pre-wrap;
+}
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "", eval = TRUE)
+options(width = 140)
+```
+
+<br> 
+
+Data simulation:
+
+- Sample size $n = 200$
+- Dimension of the Wishart distribution $p = 2$
+- Number of latent components $K = 2$
+- Probabilities of subpopulations $\boldsymbol\pi = (0.8, 0.2)$
+- Degrees of freedom $\boldsymbol\nu = (3, 12)$
+- Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_2$
+- Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2)$
+
+Modeling:
+
+- Bayesian mixture of experts of two Wishart distributions
+
+
+
+```{r}
+rm(list = ls())
+
+library(mewishart)
+
+set.seed(123)
+n <- 200 # number of subjects
+p <- 2
+
+dat <- simData(n, p,
+  pis = c(0.8, 0.2),
+  nus = c(3, 12),
+  Sigma = NULL # default Sigmas pre-defined in function 'simData()'
+)
+S_list <- dat$S
+Sigma_list <- dat$Sigma_list
+
+my_K_intial <- 2
+
+# run a mewishart model
+set.seed(123)
+fit <- mewishart(S_list,
+  K = my_K_intial, init_pi = c(0.9, 0.1),
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+)
+
+# posterior summaries
+colMeans(fit$pi)
+colMeans(dat$pi) # true pi
+
+apply(fit$nu, 2, mean)
+dat$nu # true nu
+```
+
+<br> 
+
+## Check identifiability issue
+
+```{r}
+# run the model again with swapped initial weights
+set.seed(123)
+fit2 <- mewishart(S_list,
+  K = my_K_intial, init_pi = c(0.1, 0.9),
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+)
+
+# posterior summaries
+colMeans(fit2$pi)
+colMeans(dat$pi) # true pi
+
+apply(fit2$nu, 2, mean)
+dat$nu # true nu
+```
+
+**Conclusion**: 
+
+The two model fittings above with initial weights `init_pi=c(0.9, 0.1)` and `init_pi=c(0.1, 0.9)` result in similar results, which indicate possibly identifiability. 
+
+Based on the proof of Proposition 2 in Yakowitz and Spragins (1968), we can probably give similar proofs to show identifiability of the MoE of (inverse) Wishart distributions.
+
+
