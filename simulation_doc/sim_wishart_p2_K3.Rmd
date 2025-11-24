@@ -1,0 +1,99 @@
+---
+title: "Simulation study: mixture of experts model"
+author: "The Tien Mai & Zhi Zhao"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document
+---
+
+```{css, echo=FALSE}
+pre code {
+  white-space: pre-wrap;
+}
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "", eval = TRUE)
+options(width = 140)
+```
+
+<br> 
+
+Data simulation:
+
+- Sample size $n = 200$
+- Dimension of the Wishart distribution $p = 2$
+- Number of latent components $K = 3$
+- Probabilities of subpopulations $\boldsymbol\pi = (0.35, 0.40, 0.25)$
+- Degrees of freedom $\boldsymbol\nu = (8, 12, 3)$
+- Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3$
+- Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
+
+Modeling:
+
+- Bayesian mixture of experts of two Wishart distributions
+
+
+
+```{r, results='hide'}
+rm(list = ls())
+
+library(mewishart)
+
+set.seed(123)
+n <- 200 # number of subjects
+p <- 2
+
+dat <- simData(n, p,
+  pis = c(0.35, 0.40, 0.25),
+  nus = c(8, 12, 3),
+  Sigma = NULL
+)
+S_list <- dat$S
+Sigma_list <- dat$Sigma_list
+
+# run a mewishart model
+start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
+set.seed(123)
+fit <- mewishart(S_list,
+  K = 3, niter = 2000, burnin = 500, thin = 1,
+  alpha = rep(.5, p), nu0 = 5, Psi0 = diag(p),
+  init_nu = c(8, 12, 10), sample_nu = TRUE,
+  nu_prior_a = 3, nu_prior_b = 0.1, mh_sigma = 0.15,
+  verbose = TRUE
+)
+end_time <- Sys.time()
+elapsed_time <- end_time - start_time
+```
+
+<br> 
+
+```{r}
+# posterior summaries
+colMeans(fit$pi)
+apply(fit$nu, 2, mean)
+# Sum all arrays in the list and divide by the number of saved iterations
+sigma_posterior_mean <- Reduce("+", fit$Sigma) / length(fit$Sigma)
+# View the mean covariance matrix for Cluster 1
+print(sigma_posterior_mean[, , 1])
+print(sigma_posterior_mean[, , 2])
+print(sigma_posterior_mean[, , 3])
+Sigma_list
+```
+
+```{r}
+# Mixture of experts model with covariates
+res_MoE <- mewishartX(S_list, X = matrix(rnorm(n * 3), ncol = 3), K = 3)
+str(res_MoE)
+# posterior summaries
+colMeans(res_MoE$pi)
+apply(res_MoE$nu, 2, mean)
+# Sum all arrays in the list and divide by the number of saved iterations
+sigma_posterior_mean <- Reduce("+", res_MoE$Sigma) / length(res_MoE$Sigma)
+# View the mean covariance matrix for Cluster 1
+print(sigma_posterior_mean[, , 1])
+print(sigma_posterior_mean[, , 2])
+print(sigma_posterior_mean[, , 3])
+as.data.frame(Sigma_list)
+```
+
+

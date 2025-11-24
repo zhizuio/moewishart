@@ -1,0 +1,8 @@
+^test_build.R$
+^results/
+^simulation_doc/
+^\.github$
+^LICENSE$
+^.*\.pdf$
+^.*\.Rproj$
+^\.Rproj\.user$

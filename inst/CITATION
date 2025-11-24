@@ -1,0 +1,13 @@
+bibentry("Manual",
+  title = "{{mewishart: Bayesian Multivariate Probit Models in High Dimensions}}",
+  author = c(person(given = "Zhi",
+                          family = "Zhao",
+                          email = "zhi.zhao@medisin.uio.no"),
+             person(given = "The Tien",
+                          family = "Mai")),
+  year = 2025,
+  note = "R package version 0.1",
+  url  = "https://github.com/zhizuio/mewishart.git",
+  header  = "To cite mewishart in publications use:"
+)
+
