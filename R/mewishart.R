@@ -155,8 +155,8 @@ mewishart <- function(S_list,
       term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
       term4 <- -lmvgamma(nu / 2, p)
 
-      logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
-      #logpost[, k] <- log(alpha[k] + sum(n_k[-k]) + 1e-300) + term1 + term2 + term3 + term4
+      #logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
+      logpost[, k] <- log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300) + term1 + term2 + term3 + term4
     }
 
     # Sample z
