@@ -119,6 +119,8 @@ mewishart <- function(S_list,
 
   # Pre-allocate reusable vectors
   logpost <- matrix(0, n, K)
+  n_k <- as.numeric(table(factor(z, levels = 1:K)))
+  acc_count <- numeric(K) # record acceptance counts of MH for nu
 
   # Start Timer
   start_time <- Sys.time()
@@ -153,7 +155,8 @@ mewishart <- function(S_list,
       term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
       term4 <- -lmvgamma(nu / 2, p)
 
-      logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
+      #logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
+      logpost[, k] <- log(alpha[k] + sum(n_k[-k]) + 1e-300) + term1 + term2 + term3 + term4
     }
 
     # Sample z
@@ -170,7 +173,8 @@ mewishart <- function(S_list,
     # --- Step 2: Update Weights pi ---
     n_k <- as.numeric(table(factor(z, levels = 1:K)))
     pi_k <- as.numeric(rdirichlet(1, alpha + n_k))
-
+    #pi_k <- c(0.35, 0.40, 0.25)
+    
     # --- Step 3: Update Sigma_k ---
     for (k in 1:K) {
       idx <- which(z == k)
@@ -184,13 +188,20 @@ mewishart <- function(S_list,
         S_sum <- matrix(S_sum_vec, p, p)
 
         nu_post <- nu0 + nk * nu_k[k]
-        Psi_post <- Psi0 + S_sum
+        Psi_post <- solve(Psi0) + S_sum
 
         # Invert Psi_post once for sampling
         # Use tryCatch for numerical stability
         Psi_post_inv <- tryCatch(solve(Psi_post), error = function(e) solve(Psi_post + diag(1e-6, p)))
-
+        
+        # browser() ##TODO: check bugs in updating Sigma_k
         Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
+        # if (k == 1 )
+        #   Sigma_k[, , k] <- matrix(c(0.5,0.2,0.2,0.7), nrow = 2)
+        # if (k == 2 )
+        #   Sigma_k[, , k] <- matrix(c(2,0.6,0.6,1.5), nrow = 2)
+        # if (k == 3 )
+        #   Sigma_k[, , k] <- matrix(c(4,0.2,0.2,3), nrow = 2)
       }
     }
 
@@ -198,7 +209,8 @@ mewishart <- function(S_list,
     if (sample_nu) {
       for (k in 1:K) {
         curr_nu <- nu_k[k]
-        prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+        #prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+        prop_log <- log(curr_nu) + rnorm(1, 1, mh_sigma) # random-walk MH
         prop_nu <- exp(prop_log)
 
         if (prop_nu > p - 1 + 1e-6) {
@@ -246,11 +258,14 @@ mewishart <- function(S_list,
 
           if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
             nu_k[k] <- prop_nu
+            acc_count[k] <- acc_count[k] + 1
           }
         }
       }
     }
-
+    #browser() ##TODO: check bugs in updating nu_k
+    #nu_k <- c(8, 12, 3)
+    
     # --- Calculate LogLik for history (fast approximation using Step 1 data) ---
     # We actually calculated logpost at the start of the loop (using old params).
     # We can use that for the record, or re-calc.
@@ -279,8 +294,8 @@ mewishart <- function(S_list,
       elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
       rate <- iter / elapsed
       cat(sprintf(
-        "Iter %4d | LL=%.1f | %.1f iter/sec\n",
-        iter, logliks[iter], rate
+        "Iter %4d | LL=%.1f | %.1f iter/sec | acc_rate_nu=[%.3f %.3f]\n",
+        iter, logliks[iter], rate, min(acc_count/iter), max(acc_count/iter)
       ))
     }
   }
