@@ -18,7 +18,7 @@ mewishart(
   sample_nu = TRUE,
   nu_prior_a = 2,
   nu_prior_b = 0.1,
-  mh_sigma = 0.1,
+  mh_sigma = 1,
   verbose = TRUE
 )
 }

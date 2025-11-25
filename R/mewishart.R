@@ -49,7 +49,7 @@ mewishart <- function(S_list,
                       sample_nu = TRUE,
                       nu_prior_a = 2,
                       nu_prior_b = 0.1,
-                      mh_sigma = 0.1,
+                      mh_sigma = 1,
                       verbose = TRUE) {
   # -- 1. Pre-processing and Pre-allocation --
   n <- length(S_list)
@@ -155,8 +155,8 @@ mewishart <- function(S_list,
       term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
       term4 <- -lmvgamma(nu / 2, p)
 
-      #logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
-      logpost[, k] <- log(alpha[k] + sum(n_k[-k]) + 1e-300) + term1 + term2 + term3 + term4
+      logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
+      #logpost[, k] <- log(alpha[k] + sum(n_k[-k]) + 1e-300) + term1 + term2 + term3 + term4
     }
 
     # Sample z
@@ -209,8 +209,8 @@ mewishart <- function(S_list,
     if (sample_nu) {
       for (k in 1:K) {
         curr_nu <- nu_k[k]
-        #prop_log <- rnorm(1, log(curr_nu), mh_sigma)
-        prop_log <- log(curr_nu) + rnorm(1, 1, mh_sigma) # random-walk MH
+        prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+        #prop_log <- log(curr_nu) + rnorm(1, 0, mh_sigma) # random-walk MH
         prop_nu <- exp(prop_log)
 
         if (prop_nu > p - 1 + 1e-6) {
