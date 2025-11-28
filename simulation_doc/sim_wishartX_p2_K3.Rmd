@@ -39,7 +39,7 @@ Modeling:
 ```{r, results='hide'}
 rm(list = ls())
 
-library(mewishart)
+library(moewishart)
 
 set.seed(123)
 n <- 200 # number of subjects
@@ -53,7 +53,7 @@ dat <- simData(n, p,
 S_list <- dat$S
 Sigma_list <- dat$Sigma_list
 
-# run a mewishart model with covariates
+# run a moewishart model with covariates
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
 fit <- mewishartX(S_list, K = 3, X = dat$X)

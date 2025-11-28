@@ -1,11 +1,11 @@
 #' @keywords internal
-#' @aliases mewishart-package NULL
+#' @aliases moewishart-package NULL
 #'
 #'
 "_PACKAGE"
 
 ## usethis namespace: start
-## @useDynLib mewishart, .registration = TRUE
+## @useDynLib moewishart, .registration = TRUE
 ## usethis namespace: end
 NULL
 

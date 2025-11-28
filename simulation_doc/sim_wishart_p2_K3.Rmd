@@ -37,7 +37,7 @@ Modeling:
 ```{r}
 rm(list = ls())
 
-library(mewishart)
+library(moewishart)
 
 set.seed(123)
 n <- 200 # number of subjects
@@ -53,10 +53,10 @@ Sigma_list <- dat$Sigma_list
 
 my_K_intial <- 3
 
-# run a mewishart model
+# run a moewishart model
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
-fit <- mewishart(S_list,
+fit <- moewishart(S_list,
   K = my_K_intial, init_pi = c(0.45, 0.40, 0.15), mh_sigma = 1,
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
@@ -91,7 +91,7 @@ as.data.frame(Sigma_list)
 ```{r}
 # re-run the model with wrong initial weights to check identifiability issue
 set.seed(1234)
-fit2 <- mewishart(S_list,
+fit2 <- moewishart(S_list,
   K = my_K_intial, init_pi = c(0.15, 0.40, 0.45), mh_sigma = 1,
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )

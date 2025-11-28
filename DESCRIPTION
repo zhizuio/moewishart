@@ -1,12 +1,12 @@
-Package: mewishart
+Package: moewishart
 Title: Bayesian Mixture of Experts of Wishart Distributions
 Version: 0.1
 Description: Bayesian modeling for the mixture of experts of Wishart or inverse-Wishart distributions. TBA...
 Authors@R: c(person("The Tien", "Mai", role=c("aut")),
                 person("Zhi", "Zhao", role=c("aut","cre"), email = "zhi.zhao@medisin.uio.no"))
 Maintainer: Zhi Zhao <zhi.zhao@medisin.uio.no> 
-URL: https://github.com/zhizuio/mewishart
-BugReports: https://github.com/zhizuio/mewishart/issues
+URL: https://github.com/zhizuio/moewishart
+BugReports: https://github.com/zhizuio/moewishart/issues
 License: GPL-3
 Depends: R (>= 4.1.0)
 Encoding: UTF-8

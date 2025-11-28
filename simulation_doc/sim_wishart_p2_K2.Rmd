@@ -37,7 +37,7 @@ Modeling:
 ```{r}
 rm(list = ls())
 
-library(mewishart)
+library(moewishart)
 
 set.seed(123)
 n <- 200 # number of subjects
@@ -53,9 +53,9 @@ Sigma_list <- dat$Sigma_list
 
 my_K_intial <- 2
 
-# run a mewishart model
+# run a moewishart model
 set.seed(123)
-fit <- mewishart(S_list,
+fit <- moewishart(S_list,
   K = my_K_intial, init_pi = c(0.9, 0.1),
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
@@ -75,7 +75,7 @@ dat$nu # true nu
 ```{r}
 # run the model again with swapped initial weights
 set.seed(1234)
-fit2 <- mewishart(S_list,
+fit2 <- moewishart(S_list,
   K = my_K_intial, init_pi = c(0.1, 0.9),
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )

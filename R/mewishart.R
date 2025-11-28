@@ -3,7 +3,7 @@
 #' @description
 #' TBA
 #'
-#' @name mewishart
+#' @name moewishart
 #'
 #' @importFrom utils combn
 #' @importFrom stats kmeans
@@ -36,7 +36,7 @@
 #' p <- 10
 #'
 #' @export
-mewishart <- function(S_list,
+moewishart <- function(S_list,
                       K,
                       niter = 3000,
                       burnin = 1000,
