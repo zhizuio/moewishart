@@ -1,4 +1,4 @@
-#' @title Optimized Gibbs Sampler
+#' @title Algorithm for Wishart mixture(-of-experts) model
 #'
 #' @description
 #' TBA
@@ -12,16 +12,19 @@
 #' @param K TBA
 #' @param niter TBA
 #' @param burnin TBA
+#' @param method one of \code{c("bayes", "em")}
 #' @param thin TBA
 #' @param alpha TBA
 #' @param nu0 TBA
 #' @param Psi0 TBA
 #' @param init_pi TBA
 #' @param init_nu TBA
-#' @param sample_nu TBA
+#' @param init_Sigma TBA
+#' @param estimate_nu TBA
 #' @param nu_prior_a TBA
 #' @param nu_prior_b TBA
 #' @param mh_sigma TBA
+#' @param tol TBA
 #' @param verbose TBA
 #'
 #'
@@ -40,270 +43,455 @@ moewishart <- function(S_list,
                       K,
                       niter = 3000,
                       burnin = 1000,
+                      method = "bayes",
                       thin = 1,
                       alpha = NULL,
                       nu0 = NULL,
                       Psi0 = NULL,
                       init_pi = NULL,
                       init_nu = NULL,
-                      sample_nu = TRUE,
+                      init_Sigma = NULL,
+                      estimate_nu = TRUE,
                       nu_prior_a = 2,
                       nu_prior_b = 0.1,
                       mh_sigma = 1,
+                      tol = 1e-6, 
                       verbose = TRUE) {
-  # -- 1. Pre-processing and Pre-allocation --
-  n <- length(S_list)
-  p <- nrow(S_list[[1]])
-
-  if (!is.null(alpha)) {
-    if (length(alpha) != K) {
-      warning("Length of alpha (", length(alpha), ") != K (", K, "). Recycling/triming alpha to length K.")
-      alpha <- rep(alpha, length.out = K)
-    }
-  } else {
-    alpha <- rep(1, K)
+  if (!method %in% c("bayes", "em")) {
+    stop("Argument 'method' must be either 'bayes' or 'em'!")
   }
-
-  # Defaults
-  if (is.null(nu0)) nu0 <- p + 2
-  if (is.null(Psi0)) Psi0 <- diag(p)
-  if (is.null(init_nu)) init_nu <- rep(p + 2, K)
-
-  # OPTIMIZATION: Vectorize Data
-  # Flatten each p x p matrix into a row of length p^2
-  # This allows fast summation and fast trace calculation
-  S_mat <- t(sapply(S_list, as.vector)) # Dimension: n x (p*p)
-
-  # OPTIMIZATION: Precompute log determinants of data
-  # This part of the density never changes
-  log_det_S <- sapply(S_list, function(x) determinant(x, logarithm = TRUE)$modulus)
-
-  # Initialize Parameters
-  # Use vectorized data for kmeans
-  km <- kmeans(S_mat, centers = K, nstart = 5)
-  z <- km$cluster
-
-  if (is.null(init_pi)) {
-    pi_k <- table(factor(z, levels = 1:K)) / n
-  } else {
-    if (length(init_pi) != K || sum(init_pi) != 1) {
-      stop("Please specify correct 'init_pi'!")
-    }
-    pi_k <- init_pi
-  }
-  Sigma_k <- array(0, c(p, p, K))
-  nu_k <- init_nu
-
-  # Initial Sigma
-  for (k in 1:K) {
-    idx <- which(z == k)
-    if (length(idx) == 0) {
-      Sigma_k[, , k] <- Psi0 / (nu0 - p - 1)
-    } else {
-      # OPTIMIZATION: Fast matrix sum using colSums on vectorized data
-      S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
-      S_sum <- matrix(S_sum_vec, p, p)
-      Sigma_k[, , k] <- (Psi0 + S_sum) / (nu0 + length(idx) * nu_k[k] - p - 1)
-    }
-  }
-
-  # Storage
-  nsave <- floor((niter - burnin) / thin)
-  if (nsave < 1) nsave <- 1
-  out_pi <- matrix(NA, nrow = nsave, ncol = K)
-  out_nu <- matrix(NA, nrow = nsave, ncol = K)
-  out_Sigma <- vector("list", nsave)
-  out_z <- matrix(NA, nrow = nsave, ncol = n)
-  logliks <- numeric(niter)
-  iter_save <- 0
-
-  # Pre-allocate reusable vectors
-  logpost <- matrix(0, n, K)
-  n_k <- as.numeric(table(factor(z, levels = 1:K)))
-  acc_count <- numeric(K) # record acceptance counts of MH for nu
-
-  # Start Timer
-  start_time <- Sys.time()
-
-  for (iter in 1:niter) {
-    # --- Step 1: Update Labels z (The Heavy Lifting) ---
-
-    for (k in 1:K) {
-      # OPTIMIZATION: Invert Sigma ONLY ONCE per cluster
-      Sig <- Sigma_k[, , k]
-
-      # Cholesky is faster and more stable for determinant/inverse
-      chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
-      log_det_Sig <- 2 * sum(log(diag(chol_Sig))) # log|Sigma|
-      Sig_inv <- chol2inv(chol_Sig) # Sigma^-1
-
-      # OPTIMIZATION: Vectorized Trace calculation
-      # Tr(Sigma^-1 * S_i) is the dot product of vec(Sigma^-1) and vec(S_i)
-      # We calculate this for ALL i at once via matrix multiplication
-      # S_mat is (n x p^2), as.vector(Sig_inv) is (p^2 x 1) -> Result (n x 1)
-      tr_val <- S_mat %*% as.vector(Sig_inv)
-
-      # Calculate log-density for all n points
-      # term1: (nu - p - 1)/2 * log|S|
-      # term2: -0.5 * tr(Sig^-1 S)
-      # term3: Normalizing constants involving nu and log|Sig|
-
-      nu <- nu_k[k]
-
-      term1 <- (nu - p - 1) / 2 * log_det_S
-      term2 <- -0.5 * tr_val
-      term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
-      term4 <- -lmvgamma(nu / 2, p)
-
-      #logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
-      logpost[, k] <- log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300) + term1 + term2 + term3 + term4
-    }
-
-    # Sample z
-    # Vectorized sampling is hard in base R, looping sample.int is okay
-    # but we can optimize the probability normalization
-    # Using pure R loop for sampling is usually fast enough compared to the math above
-    for (i in 1:n) {
-      lp <- logpost[i, ]
-      lp <- lp - max(lp)
-      prob <- exp(lp)
-      z[i] <- sample.int(K, 1, prob = prob)
-    }
-
-    # --- Step 2: Update Weights pi ---
-    n_k <- as.numeric(table(factor(z, levels = 1:K)))
-    pi_k <- as.numeric(rdirichlet(1, alpha + n_k))
-    #pi_k <- c(0.35, 0.40, 0.25)
+  
+  # TODO: remove redundant code for the common calculations between full Bayesian and EM algorithm
+  if (method == "bayes") {
     
-    # --- Step 3: Update Sigma_k ---
+    # -- 1. Pre-processing and Pre-allocation --
+    n <- length(S_list)
+    p <- nrow(S_list[[1]])
+    
+    if (!is.null(alpha)) {
+      if (length(alpha) != K) {
+        warning("Length of alpha (", length(alpha), ") != K (", K, "). Recycling/triming alpha to length K.")
+        alpha <- rep(alpha, length.out = K)
+      }
+    } else {
+      alpha <- rep(1, K)
+    }
+    
+    # Defaults
+    if (is.null(nu0)) nu0 <- p + 2
+    if (is.null(Psi0)) Psi0 <- diag(p)
+    if (is.null(init_nu)) init_nu <- rep(p + 2, K)
+    
+    # OPTIMIZATION: Vectorize Data
+    # Flatten each p x p matrix into a row of length p^2
+    # This allows fast summation and fast trace calculation
+    S_mat <- t(sapply(S_list, as.vector)) # Dimension: n x (p*p)
+    
+    # OPTIMIZATION: Precompute log determinants of data
+    # This part of the density never changes
+    log_det_S <- sapply(S_list, function(x) determinant(x, logarithm = TRUE)$modulus)
+    
+    # Initialize Parameters
+    # Use vectorized data for kmeans
+    km <- kmeans(S_mat, centers = K, nstart = 5)
+    z <- km$cluster
+    
+    if (is.null(init_pi)) {
+      pi_k <- table(factor(z, levels = 1:K)) / n
+    } else {
+      if (length(init_pi) != K || sum(init_pi) != 1) {
+        stop("Please specify correct 'init_pi'!")
+      }
+      pi_k <- init_pi
+    }
+    Sigma_k <- array(0, c(p, p, K))
+    nu_k <- init_nu
+    
+    # Initial Sigma
     for (k in 1:K) {
       idx <- which(z == k)
-      nk <- length(idx)
-
-      if (nk == 0) {
-        Sigma_k[, , k] <- sampleIW(nu0, solve(Psi0))
+      if (length(idx) == 0) {
+        Sigma_k[, , k] <- Psi0 / (nu0 - p - 1)
       } else {
-        # OPTIMIZATION: Fast Sum
+        # OPTIMIZATION: Fast matrix sum using colSums on vectorized data
         S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
         S_sum <- matrix(S_sum_vec, p, p)
-
-        nu_post <- nu0 + nk * nu_k[k]
-        Psi_post <- solve(Psi0) + S_sum
-
-        # Invert Psi_post once for sampling
-        # Use tryCatch for numerical stability
-        Psi_post_inv <- tryCatch(solve(Psi_post), error = function(e) solve(Psi_post + diag(1e-6, p)))
-        
-        # browser() ##TODO: check bugs in updating Sigma_k
-        Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
-        # if (k == 1 )
-        #   Sigma_k[, , k] <- matrix(c(0.5,0.2,0.2,0.7), nrow = 2)
-        # if (k == 2 )
-        #   Sigma_k[, , k] <- matrix(c(2,0.6,0.6,1.5), nrow = 2)
-        # if (k == 3 )
-        #   Sigma_k[, , k] <- matrix(c(4,0.2,0.2,3), nrow = 2)
+        Sigma_k[, , k] <- (Psi0 + S_sum) / (nu0 + length(idx) * nu_k[k] - p - 1)
       }
     }
-
-    # --- Step 4: Update nu (MH) ---
-    if (sample_nu) {
+    
+    # Storage
+    nsave <- floor((niter - burnin) / thin)
+    if (nsave < 1) nsave <- 1
+    out_pi <- matrix(NA, nrow = nsave, ncol = K)
+    out_nu <- matrix(NA, nrow = nsave, ncol = K)
+    out_Sigma <- vector("list", nsave)
+    out_z <- matrix(NA, nrow = nsave, ncol = n)
+    logliks <- numeric(niter)
+    iter_save <- 0
+    
+    # Pre-allocate reusable vectors
+    logpost <- matrix(0, n, K)
+    n_k <- as.numeric(table(factor(z, levels = 1:K)))
+    acc_count <- numeric(K) # record acceptance counts of MH for nu
+    
+    # Start Timer
+    start_time <- Sys.time()
+    
+    for (iter in 1:niter) {
+      # --- Step 1: Update Labels z (The Heavy Lifting) ---
+      
       for (k in 1:K) {
-        curr_nu <- nu_k[k]
-        prop_log <- rnorm(1, log(curr_nu), mh_sigma)
-        #prop_log <- log(curr_nu) + rnorm(1, 0, mh_sigma) # random-walk MH
-        prop_nu <- exp(prop_log)
-
-        if (prop_nu > p - 1 + 1e-6) {
-          # We need the Likelihood sum for this cluster
-          # Reuse the data stats we already know
-          idx <- which(z == k)
-          if (length(idx) > 0) {
-            # Re-calculate only necessary parts
-            # We need log|S| sum and tr(Sig^-1 S) sum
-
-            # Grab the specific rows and sum them up for efficiency
-            sum_log_det_S_k <- sum(log_det_S[idx])
-
-            # We already have Sig_inv from Step 1?
-            # No, Step 3 updated Sigma. We must re-invert current Sigma.
-            Sig <- Sigma_k[, , k]
-            chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
-            log_det_Sig <- 2 * sum(log(diag(chol_Sig)))
-            Sig_inv <- chol2inv(chol_Sig)
-
-            # Sum of traces = Tr(Sig^-1 * Sum(S))
-            # We can calculate Sum(S) fast
-            S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
-            sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
-
-            # Define a mini function for log-lik given Sufficient Stats
-            calc_ll_nu <- function(val_nu) {
-              term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
-              term2 <- -0.5 * sum_tr_val
-              term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
-              term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
-              term1 + term2 + term3 + term4
+        # OPTIMIZATION: Invert Sigma ONLY ONCE per cluster
+        Sig <- Sigma_k[, , k]
+        
+        # Cholesky is faster and more stable for determinant/inverse
+        chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
+        log_det_Sig <- 2 * sum(log(diag(chol_Sig))) # log|Sigma|
+        Sig_inv <- chol2inv(chol_Sig) # Sigma^-1
+        
+        # OPTIMIZATION: Vectorized Trace calculation
+        # Tr(Sigma^-1 * S_i) is the dot product of vec(Sigma^-1) and vec(S_i)
+        # We calculate this for ALL i at once via matrix multiplication
+        # S_mat is (n x p^2), as.vector(Sig_inv) is (p^2 x 1) -> Result (n x 1)
+        tr_val <- S_mat %*% as.vector(Sig_inv)
+        
+        # Calculate log-density for all n points
+        # term1: (nu - p - 1)/2 * log|S|
+        # term2: -0.5 * tr(Sig^-1 S)
+        # term3: Normalizing constants involving nu and log|Sig|
+        
+        nu <- nu_k[k]
+        
+        term1 <- (nu - p - 1) / 2 * log_det_S
+        term2 <- -0.5 * tr_val
+        term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
+        term4 <- -lmvgamma(nu / 2, p)
+        
+        #logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
+        logpost[, k] <- log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300) + term1 + term2 + term3 + term4
+      }
+      
+      # Sample z
+      # Vectorized sampling is hard in base R, looping sample.int is okay
+      # but we can optimize the probability normalization
+      # Using pure R loop for sampling is usually fast enough compared to the math above
+      for (i in 1:n) {
+        lp <- logpost[i, ]
+        lp <- lp - max(lp)
+        prob <- exp(lp)
+        z[i] <- sample.int(K, 1, prob = prob)
+      }
+      
+      # --- Step 2: Update Weights pi ---
+      n_k <- as.numeric(table(factor(z, levels = 1:K)))
+      pi_k <- as.numeric(rdirichlet(1, alpha + n_k))
+      #pi_k <- c(0.35, 0.40, 0.25)
+      
+      # --- Step 3: Update Sigma_k ---
+      for (k in 1:K) {
+        idx <- which(z == k)
+        nk <- length(idx)
+        
+        if (nk == 0) {
+          Sigma_k[, , k] <- sampleIW(nu0, solve(Psi0))
+        } else {
+          # OPTIMIZATION: Fast Sum
+          S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
+          S_sum <- matrix(S_sum_vec, p, p)
+          
+          nu_post <- nu0 + nk * nu_k[k]
+          Psi_post <- solve(Psi0) + S_sum
+          
+          # Invert Psi_post once for sampling
+          # Use tryCatch for numerical stability
+          Psi_post_inv <- tryCatch(solve(Psi_post), error = function(e) solve(Psi_post + diag(1e-6, p)))
+          
+          # browser() ##TODO: check bugs in updating Sigma_k
+          Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
+          # if (k == 1 )
+          #   Sigma_k[, , k] <- matrix(c(0.5,0.2,0.2,0.7), nrow = 2)
+          # if (k == 2 )
+          #   Sigma_k[, , k] <- matrix(c(2,0.6,0.6,1.5), nrow = 2)
+          # if (k == 3 )
+          #   Sigma_k[, , k] <- matrix(c(4,0.2,0.2,3), nrow = 2)
+        }
+      }
+      
+      # --- Step 4: Update nu (MH) ---
+      if (estimate_nu) {
+        for (k in 1:K) {
+          curr_nu <- nu_k[k]
+          prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+          #prop_log <- log(curr_nu) + rnorm(1, 0, mh_sigma) # random-walk MH
+          prop_nu <- exp(prop_log)
+          
+          if (prop_nu > p - 1 + 1e-6) {
+            # We need the Likelihood sum for this cluster
+            # Reuse the data stats we already know
+            idx <- which(z == k)
+            if (length(idx) > 0) {
+              # Re-calculate only necessary parts
+              # We need log|S| sum and tr(Sig^-1 S) sum
+              
+              # Grab the specific rows and sum them up for efficiency
+              sum_log_det_S_k <- sum(log_det_S[idx])
+              
+              # We already have Sig_inv from Step 1?
+              # No, Step 3 updated Sigma. We must re-invert current Sigma.
+              Sig <- Sigma_k[, , k]
+              chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
+              log_det_Sig <- 2 * sum(log(diag(chol_Sig)))
+              Sig_inv <- chol2inv(chol_Sig)
+              
+              # Sum of traces = Tr(Sig^-1 * Sum(S))
+              # We can calculate Sum(S) fast
+              S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
+              sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
+              
+              # Define a mini function for log-lik given Sufficient Stats
+              calc_ll_nu <- function(val_nu) {
+                term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
+                term2 <- -0.5 * sum_tr_val
+                term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
+                term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
+                term1 + term2 + term3 + term4
+              }
+              
+              ll_old <- calc_ll_nu(curr_nu)
+              ll_new <- calc_ll_nu(prop_nu)
+            } else {
+              ll_old <- 0
+              ll_new <- 0
             }
-
-            ll_old <- calc_ll_nu(curr_nu)
-            ll_new <- calc_ll_nu(prop_nu)
-          } else {
-            ll_old <- 0
-            ll_new <- 0
-          }
-
-          # Priors + Jacobian
-          lp_old <- (nu_prior_a - 1) * log(curr_nu) - nu_prior_b * curr_nu + log(curr_nu)
-          lp_new <- (nu_prior_a - 1) * log(prop_nu) - nu_prior_b * prop_nu + log(prop_nu)
-
-          if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
-            nu_k[k] <- prop_nu
-            acc_count[k] <- acc_count[k] + 1
+            
+            # Priors + Jacobian
+            lp_old <- (nu_prior_a - 1) * log(curr_nu) - nu_prior_b * curr_nu + log(curr_nu)
+            lp_new <- (nu_prior_a - 1) * log(prop_nu) - nu_prior_b * prop_nu + log(prop_nu)
+            
+            if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
+              nu_k[k] <- prop_nu
+              acc_count[k] <- acc_count[k] + 1
+            }
           }
         }
       }
-    }
-    #browser() ##TODO: check bugs in updating nu_k
-    #nu_k <- c(8, 12, 3)
-    
-    # --- Calculate LogLik for history (fast approximation using Step 1 data) ---
-    # We actually calculated logpost at the start of the loop (using old params).
-    # We can use that for the record, or re-calc.
-    # Using the one from Step 1 is "Lag-1" loglik but much faster.
-    # For strictness, let's recalculate using log-sum-exp on logpost:
-    # Note: logpost updated in Step 1 corresponds to Z sampling.
-
-    # Fast LogSumExp on rows
-    max_l <- apply(logpost, 1, max)
-    row_sums <- exp(logpost - max_l)
-    logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
-
-    # --- Save ---
-    if (iter > burnin && ((iter - burnin) %% thin == 0)) {
-      iter_save <- iter_save + 1
-      if (iter_save <= nsave) {
-        out_pi[iter_save, ] <- pi_k
-        out_nu[iter_save, ] <- nu_k
-        out_Sigma[[iter_save]] <- Sigma_k
-        out_z[iter_save, ] <- z
+      #browser() ##TODO: check bugs in updating nu_k
+      #nu_k <- c(8, 12, 3)
+      
+      # --- Calculate LogLik for history (fast approximation using Step 1 data) ---
+      # We actually calculated logpost at the start of the loop (using old params).
+      # We can use that for the record, or re-calc.
+      # Using the one from Step 1 is "Lag-1" loglik but much faster.
+      # For strictness, let's recalculate using log-sum-exp on logpost:
+      # Note: logpost updated in Step 1 corresponds to Z sampling.
+      
+      # Fast LogSumExp on rows
+      max_l <- apply(logpost, 1, max)
+      row_sums <- exp(logpost - max_l)
+      logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
+      
+      # --- Save ---
+      if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+        iter_save <- iter_save + 1
+        if (iter_save <= nsave) {
+          out_pi[iter_save, ] <- pi_k
+          out_nu[iter_save, ] <- nu_k
+          out_Sigma[[iter_save]] <- Sigma_k
+          out_z[iter_save, ] <- z
+        }
+      }
+      
+      if (verbose && (iter %% 500 == 0 || iter == 1)) {
+        # Calculate speed
+        elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+        rate <- iter / elapsed
+        cat(sprintf(
+          "Iter %4d | LL=%.1f | %.1f iter/sec | acc_rate_nu=[%.3f %.3f]\n",
+          iter, logliks[iter], rate, min(acc_count/iter), max(acc_count/iter)
+        ))
       }
     }
+    
+    sigma_posterior_mean <- Reduce("+", out_Sigma) / length(out_Sigma)
+    
+    ret <- list(
+      pi = out_pi, nu = out_nu, Sigma = out_Sigma, z = out_z,
+      sigma_posterior_mean = sigma_posterior_mean, loglik = logliks
+    )
+  }
+  
+  if (method == "em") {
+    maxiter <- niter
+    ret <- moewishart.em(S_list, K, init_pi, init_Sigma, init_nu, 
+                         maxiter, tol, estimate_nu, verbose)
+  }
+  
+  return(ret)
+}
 
-    if (verbose && (iter %% 500 == 0 || iter == 1)) {
-      # Calculate speed
-      elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-      rate <- iter / elapsed
-      cat(sprintf(
-        "Iter %4d | LL=%.1f | %.1f iter/sec | acc_rate_nu=[%.3f %.3f]\n",
-        iter, logliks[iter], rate, min(acc_count/iter), max(acc_count/iter)
-      ))
+# -- Internal function with EM algorithm for the Wishart mixture model--
+
+moewishart.em <- function(S_list, K,
+                               init_pi = NULL, 
+                               init_Sigma = NULL, 
+                               init_nu = NULL,
+                               maxiter = 200, 
+                               tol = 1e-6, 
+                               estimate_nu = TRUE,
+                               verbose = TRUE) {
+  n <- length(S_list)
+  p <- ncol(S_list[[1]])
+  
+  # Pre-compute log|S_i| as it is constant throughout EM
+  logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
+  
+  # --- 1. Initialization (CORRECTED) ---
+  
+  # Mixing proportions
+  if (is.null(init_pi)) {
+    pi_k <- rep(1 / K, K)
+  } else {
+    pi_k <- init_pi
+  }
+  
+  # Degrees of freedom
+  if (is.null(init_nu)) {
+    nu_k <- rep(p + 5, K)
+  } else {
+    nu_k <- init_nu
+  }
+  
+  # Scale Matrices: Random initialization to break symmetry
+  if (is.null(init_Sigma)) {
+    # Pick K random indices from the data to act as initial centers
+    # We divide by nu_k to get the scale matrix, as E[S] = nu * Sigma
+    rand_indices <- sample(seq_len(n), K)
+    Sigma_k <- lapply(seq_len(K), function(k) {
+      idx <- rand_indices[k]
+      # Slight perturbation or just use the raw matrix normalized by df
+      S_list[[idx]] / nu_k[k]
+    })
+  } else {
+    Sigma_k <- init_Sigma
+  }
+  
+  tau <- matrix(0, n, K)
+  loglik_trace <- numeric()
+  
+  for (iter in seq_len(maxiter)) {
+    
+    # --- 2. E-Step ---
+    logdens <- matrix(NA, n, K)
+    
+    for (k in seq_len(K)) {
+      # Vectorize this loop if possible, but loop is okay for readability
+      for (i in seq_len(n)) {
+        logdens[i, k] <- dWishart(S_list[[i]], nu_k[k], Sigma_k[[k]], 
+                                  logarithm = TRUE)
+      }
+      logdens[, k] <- logdens[, k] + log(pi_k[k])
+    }
+    
+    # Log-Sum-Exp for numerical stability
+    maxlog <- apply(logdens, 1, max)
+    # Prevent underflow for very small probabilities
+    denom <- maxlog + log(rowSums(exp(logdens - maxlog)))
+    logtau <- sweep(logdens, 1, denom, FUN = "-")
+    tau <- exp(logtau)
+    
+    current_loglik <- sum(denom)
+    loglik_trace <- c(loglik_trace, current_loglik)
+    
+    if (verbose && iter %% 10 == 0) {
+      cat(sprintf("Iter %3d | Loglik: %.4f | Nu: %s\n", 
+                  iter, current_loglik, paste(round(nu_k, 2), collapse=", ")))
+    }
+    
+    # Convergence check
+    if (iter > 2 && abs(loglik_trace[iter] - loglik_trace[iter - 1]) < tol) {
+      if (verbose) cat("Converged at iteration", iter, "\n")
+      break
+    }
+    
+    # --- 3. M-Step ---
+    N_k <- colSums(tau)
+    pi_k <- N_k / n
+    
+    # Prevent collapse of clusters
+    if (any(N_k < 1e-6)) {
+      # Re-initialize empty cluster to a random data point
+      bad_k <- which(N_k < 1e-6)
+      for (bk in bad_k) {
+        ridx <- sample(n, 1)
+        Sigma_k[[bk]] <- S_list[[ridx]] / nu_k[bk]
+        N_k[bk] <- 1 # Soft reset
+      }
+    }
+    
+    for (k in seq_len(K)) {
+      # Weighted sum of S_i
+      # Using Reduce is okay, but loop accumulation is often clearer/faster in R for lists
+      Ssum <- matrix(0, p, p)
+      for(i in seq_len(n)) {
+        if (tau[i, k] > 1e-10) { # Sparse update optimization
+          Ssum <- Ssum + tau[i, k] * S_list[[i]]
+        }
+      }
+      
+      # 3a. Update Sigma (conditional on current nu)
+      Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
+      
+      # 3b. Update Nu (if requested)
+      if (estimate_nu) {
+        # Profile Log-Likelihood maximization for nu
+        # Target: log(nu/2) + psi(nu/2 + ...) terms vs Data Stats
+        
+        T1k <- sum(tau[, k] * logdetS)
+        logdetSig <- as.numeric(determinant(Sigma_k[[k]], logarithm = TRUE)$modulus)
+        
+        lhs <- (T1k / N_k[k]) - logdetSig - p * log(2)
+        
+        # Newton-Raphson functions
+        f <- function(v) {
+          lhs - sum(digamma(v / 2 + (1 - seq_len(p)) / 2)) + p * log(v/2)
+        }
+        
+        f_optim <- function(v) {
+          # We want to find root of: LHS - sum(digamma(v/2 + ...))
+          # , strictly: E[log|W|] = log|Sigma| + p*log(2) + sum(digamma(...))
+          # So sum(digamma(...)) = E[log|W|] - log|Sigma| - p*log(2) = LHS.
+          # So we want: LHS - sum(digamma(...)) = 0
+          lhs - sum(digamma(v / 2 + (1 - seq_len(p)) / 2))
+        }
+        
+        fp_optim <- function(v) {
+          -0.5 * sum(trigamma(v / 2 + (1 - seq_len(p)) / 2))
+        }
+        
+        # Newton Iteration
+        curr_nu <- nu_k[k]
+        for (nm in 1:20) {
+          val <- f_optim(curr_nu)
+          grad <- fp_optim(curr_nu)
+          if(is.na(val) || is.na(grad) || abs(grad) < 1e-8) break
+          
+          step <- val / grad
+          curr_nu <- curr_nu - step
+          
+          # Constraints
+          if (curr_nu <= p) curr_nu <- p + 0.1
+          if (curr_nu > 1e5) curr_nu <- 1e5
+          if (abs(step) < 1e-4) break
+        }
+        nu_k[k] <- curr_nu
+        
+        # 3c. Consistency update: Re-calc Sigma with new nu
+        Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
+      }
     }
   }
-
-  sigma_posterior_mean <- Reduce("+", out_Sigma) / length(out_Sigma)
-
-  list(
-    pi = out_pi, nu = out_nu, Sigma = out_Sigma, z = out_z,
-    sigma_posterior_mean = sigma_posterior_mean, loglik = logliks
-  )
+  
+  list(pi = pi_k, Sigma = Sigma_k, nu = nu_k, tau = tau,
+       loglik = loglik_trace, iterations = iter)
 }

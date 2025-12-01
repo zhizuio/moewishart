@@ -52,7 +52,10 @@ S_list <- dat$S
 Sigma_list <- dat$Sigma_list
 
 my_K_intial <- 2
+```
 
+
+```{r}
 # run a moewishart model
 set.seed(123)
 fit <- moewishart(S_list,
@@ -95,3 +98,22 @@ The two model fittings above with initial weights `init_pi=c(0.9, 0.1)` and `ini
 It might be NOT possible based on the proof of Proposition 2 in Yakowitz and Spragins (1968) to give similar proofs to show identifiability of the MoE of (inverse) Wishart distributions.
 
 
+<br> 
+
+## EM algorithm instead of full Bayesian
+
+```{r}
+# run the model with EM algorithm
+set.seed(1234)
+fit3 <- moewishart(S_list, method = "em",
+  K = my_K_intial, init_pi = c(0.1, 0.9),
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+)
+
+# posterior summaries
+fit3$pi
+colMeans(dat$pi) # true pi
+
+fit3$nu
+dat$nu # true nu
+```

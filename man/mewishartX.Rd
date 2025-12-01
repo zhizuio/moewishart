@@ -2,7 +2,7 @@
 % Please edit documentation in R/moewishartX.R
 \name{mewishartX}
 \alias{mewishartX}
-\title{Gibbs Sampler of MoE model}
+\title{Algorithm for Wishart mixture(-of-experts) model with covariates}
 \usage{
 mewishartX(
   S_list,
@@ -10,16 +10,20 @@ mewishartX(
   K,
   niter = 3000,
   burnin = 1000,
+  method = "bayes",
   thin = 1,
   nu0 = NULL,
   Psi0 = NULL,
   init_nu = NULL,
-  sample_nu = TRUE,
+  estimate_nu = TRUE,
   nu_prior_a = 2,
   nu_prior_b = 0.1,
   mh_sigma = 0.1,
   mh_beta = 0.05,
   sigma_beta = 10,
+  init = NULL,
+  tol = 1e-06,
+  ridge = 1e-08,
   verbose = TRUE
 )
 }
@@ -34,6 +38,8 @@ mewishartX(
 
 \item{burnin}{TBA}
 
+\item{method}{one of \code{c("bayes", "em")}}
+
 \item{thin}{TBA}
 
 \item{nu0}{TBA}
@@ -42,7 +48,7 @@ mewishartX(
 
 \item{init_nu}{TBA}
 
-\item{sample_nu}{TBA}
+\item{estimate_nu}{TBA}
 
 \item{nu_prior_a}{TBA}
 
@@ -53,6 +59,12 @@ mewishartX(
 \item{mh_beta}{TBA}
 
 \item{sigma_beta}{TBA}
+
+\item{init}{TBA}
+
+\item{tol}{TBA}
+
+\item{ridge}{TBA}
 
 \item{verbose}{TBA}
 }

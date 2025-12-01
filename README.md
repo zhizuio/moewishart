@@ -4,7 +4,7 @@
 -->
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 
-# moewishart: Bayesian Mixture of Experts of Wishart Distributions for covariance matrix data
+# moewishart: Bayesian Mixture of Experts of Wishart Distributions
 
 
 ## Installation

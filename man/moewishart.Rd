@@ -2,23 +2,26 @@
 % Please edit documentation in R/moewishart.R
 \name{moewishart}
 \alias{moewishart}
-\title{Optimized Gibbs Sampler}
+\title{Algorithm for Wishart mixture(-of-experts) model}
 \usage{
 moewishart(
   S_list,
   K,
   niter = 3000,
   burnin = 1000,
+  method = "bayes",
   thin = 1,
   alpha = NULL,
   nu0 = NULL,
   Psi0 = NULL,
   init_pi = NULL,
   init_nu = NULL,
-  sample_nu = TRUE,
+  init_Sigma = NULL,
+  estimate_nu = TRUE,
   nu_prior_a = 2,
   nu_prior_b = 0.1,
   mh_sigma = 1,
+  tol = 1e-06,
   verbose = TRUE
 )
 }
@@ -30,6 +33,8 @@ moewishart(
 \item{niter}{TBA}
 
 \item{burnin}{TBA}
+
+\item{method}{one of \code{c("bayes", "em")}}
 
 \item{thin}{TBA}
 
@@ -43,13 +48,17 @@ moewishart(
 
 \item{init_nu}{TBA}
 
-\item{sample_nu}{TBA}
+\item{init_Sigma}{TBA}
+
+\item{estimate_nu}{TBA}
 
 \item{nu_prior_a}{TBA}
 
 \item{nu_prior_b}{TBA}
 
 \item{mh_sigma}{TBA}
+
+\item{tol}{TBA}
 
 \item{verbose}{TBA}
 }
