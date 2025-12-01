@@ -352,6 +352,11 @@ moewishart.em <- function(S_list, K,
   # Mixing proportions
   if (is.null(init_pi)) {
     pi_k <- rep(1 / K, K)
+    
+    # Initialize Parameters
+    # Use vectorized data for kmeans
+    # z <- kmeans(t(sapply(S_list, as.vector)), centers = K, nstart = 5)$cluster
+    # pi_k <- table(factor(z, levels = 1:K)) / n
   } else {
     pi_k <- init_pi
   }
