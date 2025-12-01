@@ -100,7 +100,9 @@ It might be NOT possible based on the proof of Proposition 2 in Yakowitz and Spr
 
 <br> 
 
-## EM algorithm instead of full Bayesian
+## EM algorithm
+
+<br> 
 
 ```{r}
 # run the model with EM algorithm
@@ -110,7 +112,7 @@ fit3 <- moewishart(S_list, method = "em",
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
 
-# posterior summaries
+# EM estimates
 fit3$pi
 colMeans(dat$pi) # true pi
 

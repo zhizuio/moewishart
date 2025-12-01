@@ -76,5 +76,29 @@ apply(fit$nu, 2, mean)
 dat$nu # true nu
 ```
 
+
 <br> 
+
+## EM algorithm
+
+<br> 
+
+```{r}
+# run the model with EM algorithm
+set.seed(1234)
+fit3 <- moewishart(S_list, method = "em",
+                 K = my_K_intial, mh_sigma = 1,
+                 niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+)
+
+# EM estimates
+fit3$pi
+colMeans(dat$pi) # true pi
+
+fit3$nu
+dat$nu # true nu
+```
+
+
+
 

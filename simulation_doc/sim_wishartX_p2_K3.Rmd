@@ -45,6 +45,7 @@ set.seed(123)
 n <- 200 # number of subjects
 p <- 2
 
+# simluate data
 dat <- simData(n, p,
   Xq = 3, K = 3,
   nus = c(8, 12, 3),
@@ -52,7 +53,11 @@ dat <- simData(n, p,
 )
 S_list <- dat$S
 Sigma_list <- dat$Sigma_list
+```
 
+<br> 
+
+```{r}
 # run a moewishart model with covariates
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
@@ -82,5 +87,28 @@ print(MoE_mean[, , 3])
 as.data.frame(Sigma_list)
 (a2 <- apply(MoE_mean, MARGIN = 3, function(aa) min(sapply(Sigma_list, function(x) sum((aa - x)^2)))))
 ```
+
+
+<br> 
+
+## EM algorithm
+
+<br> 
+
+```{r}
+# run the model with EM algorithm
+set.seed(1234)
+fit3 <- mewishartX(S_list, K = 3, X = dat$X, method = "em")
+
+# EM estimates
+colMeans(fit3$gamma)
+colMeans(dat$pi) # true pi
+
+fit3$nu
+dat$nu # true nu
+```
+
+
+
 
 
