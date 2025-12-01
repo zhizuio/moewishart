@@ -111,24 +111,6 @@ mewishartX <- function(S_list,
     Beta[, 1:(K - 1)] <- matrix(rnorm(q * (K - 1), 0, 0.1), nrow = q, ncol = K - 1)
     Beta[, K] <- 0
 
-    # helper: compute pi_ik matrix (n x K) given Beta
-    softmax_rows <- function(L) {
-      # L: n x K matrix of linear predictors
-      m <- apply(L, 1, max)
-      Ls <- L - m
-      S <- exp(Ls)
-      row_sums <- rowSums(S)
-      S / row_sums
-    }
-    compute_pi_ik <- function(X, Beta) {
-      L <- X %*% Beta # n x K
-      # numeric stability: subtract row max
-      rm <- apply(L, 1, max)
-      Ls <- L - rm
-      expL <- exp(Ls)
-      expL / rowSums(expL)
-    }
-
     pi_ik <- compute_pi_ik(X, Beta) # n x K
 
     # Storage
@@ -300,6 +282,26 @@ mewishartX <- function(S_list,
   return(ret)
 }
 
+# -- Internal help functions for full Bayesian--
+
+# helper: compute pi_ik matrix (n x K) given Beta
+softmax_rows <- function(L) {
+  # L: n x K matrix of linear predictors
+  m <- apply(L, 1, max)
+  Ls <- L - m
+  S <- exp(Ls)
+  row_sums <- rowSums(S)
+  S / row_sums
+}
+compute_pi_ik <- function(X, Beta) {
+  L <- X %*% Beta # n x K
+  # numeric stability: subtract row max
+  rm <- apply(L, 1, max)
+  Ls <- L - rm
+  expL <- exp(Ls)
+  expL / rowSums(expL)
+}
+
 # -- Internal function with EM algorithm for the Wishart mixture-of-experts model--
 
 moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
@@ -307,28 +309,6 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
   n <- length(S_list)
   p <- nrow(S_list[[1]])
   q <- ncol(X)
-
-  # helper: log multivariate gamma derivative (psi_p) and its derivative
-  psi_p <- function(a, p) sum(digamma(a + (1 - (1:p)) / 2))
-  trigamma_p <- function(a, p) sum(trigamma(a + (1 - (1:p)) / 2))
-
-
-  # log density of Wishart S ~ W_p(nu, Sigma)
-  # ### OPTIMIZATION: Pass precomputed detS to avoid recalculating it inside loops
-  log_dWishart <- function(S, nu, Sigma, detS_val = NULL) {
-    if (is.null(detS_val)) {
-      detS_val <- as.numeric(determinant(S, logarithm = TRUE)$modulus)
-    }
-    detSigma <- as.numeric(determinant(Sigma, logarithm = TRUE)$modulus)
-    term1 <- ((nu - p - 1) / 2) * detS_val
-    term2 <- -0.5 * sum(diag(solve(Sigma, S)))
-    term3 <- -(nu * p / 2) * log(2) - (nu / 2) * detSigma - lgamma_multivariate(nu / 2, p)
-    term1 + term2 + term3
-  }
-
-  lgamma_multivariate <- function(a, p) {
-    sum(lgamma(a + (1 - (1:p)) / 2)) + (p * (p - 1) / 4) * log(pi)
-  }
 
   # --- CORRECTION 1: BREAK SYMMETRY IN INITIALIZATION ---
   if (is.null(init)) {
@@ -340,18 +320,6 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
   } else {
     gamma <- init$gamma
     if (is.null(init_nu) && !is.null(init$nu)) init_nu <- init$nu
-  }
-
-  compute_A_nk <- function(gamma) {
-    n_k <- colSums(gamma)
-    A_list <- vector("list", K)
-    for (k in 1:K) {
-      A <- matrix(0, p, p)
-      # Vectorizing this sum is hard with list of matrices, loop is okay
-      for (i in 1:n) A <- A + gamma[i, k] * S_list[[i]]
-      A_list[[k]] <- A
-    }
-    list(A = A_list, n_k = n_k)
   }
 
   pars <- list()
@@ -378,89 +346,20 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
   loglik_hist <- numeric(maxit)
   small_eps <- ridge
 
-  gating_probs_from_beta <- function(beta_vec) {
-    B <- matrix(0, q, K)
-    if (K > 1) {
-      B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
-    }
-    eta <- X %*% B
-    eta_max <- apply(eta, 1, max)
-    exp_eta <- exp(eta - eta_max)
-    denom <- rowSums(exp_eta)
-    exp_eta / denom
-  }
-  
-  neg_wt_multinom <- function(beta_vec, gamma) {
-    pi_mat <- gating_probs_from_beta(beta_vec)
-    # prevent log(0)
-    ll <- sum(gamma * log(pi_mat + 1e-300))
-    -ll
-  }
-  
-  grad_wt_multinom <- function(beta_vec, gamma) {
-    B <- matrix(0, q, K)
-    if (K > 1) B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
-    pi_mat <- gating_probs_from_beta(beta_vec)
-    grad_mat <- matrix(0, q, K - 1)
-    for (k in 1:(K - 1)) {
-      # gradient of NEGATIVE likelihood is sum((pi - gamma) * X)
-      diff <- pi_mat[, k] - gamma[, k]
-      grad_mat[, k] <- colSums(X * diff)
-    }
-    as.numeric(grad_mat)
-  }
-
-  # --- CORRECTION 2: FIX NEWTON-RAPHSON DERIVATIVE ---
-  solve_nu <- function(init_nu, A_k, n_k, mean_logS_k, p, maxit = 20) {
-    nu <- max(init_nu, p + 1.001)
-
-    # OPTIMIZATION: Compute logdet(A) once outside the loop
-    # A_k is constant during the nu update
-    logdetA <- as.numeric(determinant(A_k, logarithm = TRUE)$modulus)
-
-    for (it in 1:maxit) {
-      # Use algebraic property: log|A / (n*nu)| = log|A| - p*log(n*nu)
-      logdetSigma <- logdetA - p * log(n_k * nu)
-
-      # Objective function
-      lhs <- psi_p(nu / 2, p)
-      rhs <- mean_logS_k - logdetSigma - p * log(2)
-      fval <- lhs - rhs
-
-      if (abs(fval) < 1e-6) break
-
-      # Derivative
-      df <- 0.5 * trigamma_p(nu / 2, p) - (p / nu)
-
-      # Newton update
-      nu_new <- nu - fval / df
-
-      # Boundary check
-      if (!is.finite(nu_new) || nu_new <= p + 1e-6) {
-        nu_new <- (nu + (p + 1.0)) / 2
-      }
-      if (abs(nu_new - nu) < 1e-6) {
-        nu <- nu_new
-        break
-      }
-      nu <- nu_new
-    }
-    max(nu, p + 1.001)
-  }
-
   # precompute log|S_i| for all i
   logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
 
   # EM loop
   for (iter in 1:maxit) {
     # --- E-step ---
-    pi_mat <- gating_probs_from_beta(beta_vec)
+    pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
     log_f_mat <- matrix(NA, n, K)
 
     for (k in 1:K) {
       for (i in 1:n) {
         # Use precomputed logdetS to speed up
-        log_f_mat[i, k] <- log_dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]], logdetS[i])
+        log_f_mat[i, k] <- dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]], 
+                                    logdetS[i], logarithm = TRUE)
       }
     }
 
@@ -481,7 +380,7 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
     }
 
     # --- M-step ---
-    an <- compute_A_nk(gamma)
+    an <- compute_A_nk(gamma, K, p, n, S_list)
     A_list <- an$A
     n_k <- an$n_k
 
@@ -510,7 +409,8 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
 
     # Update beta
     opt <- optim(beta_vec,
-      fn = neg_wt_multinom, gr = grad_wt_multinom,
+      fn = neg_wt_multinom, gr = grad_wt_multinom, 
+      q, K, X, # Further arguments to be passed to fn and gr
       method = "BFGS", gamma = gamma, control = list(maxit = 50)
     )
     beta_vec <- opt$par
@@ -525,4 +425,92 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
     Beta = Beta_mat, Sigma = Sigma_list, nu = nu_vec,
     gamma = gamma, loglik = loglik_hist[1:iter], iter = iter
   )
+}
+
+# -- Internal help functions for EM algorithm--
+
+# helper: log multivariate gamma derivative (psi_p) and its derivative
+psi_p <- function(a, p) sum(digamma(a + (1 - (1:p)) / 2))
+
+trigamma_p <- function(a, p) sum(trigamma(a + (1 - (1:p)) / 2))
+
+compute_A_nk <- function(gamma, K, p, n, S_list) {
+  n_k <- colSums(gamma)
+  A_list <- vector("list", K)
+  for (k in 1:K) {
+    A <- matrix(0, p, p)
+    # Vectorizing this sum is hard with list of matrices, loop is okay
+    for (i in 1:n) A <- A + gamma[i, k] * S_list[[i]]
+    A_list[[k]] <- A
+  }
+  list(A = A_list, n_k = n_k)
+}
+gating_probs_from_beta <- function(beta_vec, q, K, X) {
+  B <- matrix(0, q, K)
+  if (K > 1) {
+    B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
+  }
+  eta <- X %*% B
+  eta_max <- apply(eta, 1, max)
+  exp_eta <- exp(eta - eta_max)
+  denom <- rowSums(exp_eta)
+  exp_eta / denom
+}
+
+neg_wt_multinom <- function(beta_vec, gamma, q, K, X) {
+  pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
+  # prevent log(0)
+  ll <- sum(gamma * log(pi_mat + 1e-300))
+  -ll
+}
+
+grad_wt_multinom <- function(beta_vec, gamma, q, K, X) {
+  B <- matrix(0, q, K)
+  if (K > 1) B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
+  pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
+  grad_mat <- matrix(0, q, K - 1)
+  for (k in 1:(K - 1)) {
+    # gradient of NEGATIVE likelihood is sum((pi - gamma) * X)
+    diff <- pi_mat[, k] - gamma[, k]
+    grad_mat[, k] <- colSums(X * diff)
+  }
+  as.numeric(grad_mat)
+}
+
+# --- CORRECTION 2: FIX NEWTON-RAPHSON DERIVATIVE ---
+solve_nu <- function(init_nu, A_k, n_k, mean_logS_k, p, maxit = 20) {
+  nu <- max(init_nu, p + 1.001)
+  
+  # OPTIMIZATION: Compute logdet(A) once outside the loop
+  # A_k is constant during the nu update
+  logdetA <- as.numeric(determinant(A_k, logarithm = TRUE)$modulus)
+  
+  for (it in 1:maxit) {
+    # Use algebraic property: log|A / (n*nu)| = log|A| - p*log(n*nu)
+    logdetSigma <- logdetA - p * log(n_k * nu)
+    
+    # Objective function
+    lhs <- psi_p(nu / 2, p)
+    rhs <- mean_logS_k - logdetSigma - p * log(2)
+    fval <- lhs - rhs
+    
+    if (abs(fval) < 1e-6) break
+    
+    # Derivative
+    df <- 0.5 * trigamma_p(nu / 2, p) - (p / nu)
+    
+    # Newton update
+    nu_new <- nu - fval / df
+    
+    # Boundary check
+    if (!is.finite(nu_new) || nu_new <= p + 1e-6) {
+      nu_new <- (nu + (p + 1.0)) / 2
+    }
+    if (abs(nu_new - nu) < 1e-6) {
+      nu <- nu_new
+      break
+    }
+    nu <- nu_new
+  }
+  max(nu, p + 1.001)
 }

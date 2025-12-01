@@ -4,7 +4,7 @@
 \alias{dWishart}
 \title{density of Wishart distribution}
 \usage{
-dWishart(S, nu, Sigma, logarithm = TRUE)
+dWishart(S, nu, Sigma, detS_val = NULL, logarithm = TRUE)
 }
 \arguments{
 \item{S}{TBA}
@@ -12,6 +12,8 @@ dWishart(S, nu, Sigma, logarithm = TRUE)
 \item{nu}{TBA}
 
 \item{Sigma}{TBA}
+
+\item{detS_val}{TBA}
 
 \item{logarithm}{logical value for log scale or not}
 }
