@@ -43,10 +43,11 @@ set.seed(123)
 n <- 200 # number of subjects
 p <- 10
 
-dat <- simData(n, p, K = 5,
-               pis = c(0.35, 0.10, 0.25, 0.2, 0.1),
-               nus = c(p+5, p+2, p+10, p+1, p+3),
-               Sigma = NULL # default Sigmas pre-defined in function 'simData()'
+dat <- simData(n, p,
+  K = 5,
+  pis = c(0.35, 0.10, 0.25, 0.2, 0.1),
+  nus = c(p + 5, p + 2, p + 10, p + 1, p + 3),
+  Sigma = NULL # default Sigmas pre-defined in function 'simData()'
 )
 S_list <- dat$S
 Sigma_list <- dat$Sigma_list
@@ -57,8 +58,8 @@ my_K_intial <- 5
 start_time <- Sys.time()
 set.seed(123)
 fit <- moewishart(S_list,
-                 K = my_K_intial, mh_sigma = 1,
-                 niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+  K = my_K_intial, mh_sigma = 1,
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
 end_time <- Sys.time()
 elapsed_time <- end_time - start_time
@@ -86,9 +87,10 @@ dat$nu # true nu
 ```{r}
 # run the model with EM algorithm
 set.seed(1234)
-fit3 <- moewishart(S_list, method = "em",
-                 K = my_K_intial, mh_sigma = 1,
-                 niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+fit3 <- moewishart(S_list,
+  method = "em",
+  K = my_K_intial, mh_sigma = 1,
+  niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )
 
 # EM estimates

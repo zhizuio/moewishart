@@ -96,7 +96,9 @@ simData <- function(n = 200, p = 2,
     S_list[[i]] <- W
   }
 
-  list(S = S_list, z = z_true, 
-       nu = nus, pi = pis,
-       Sigma_list = Sigma_list, X = X)
+  list(
+    S = S_list, z = z_true,
+    nu = nus, pi = pis,
+    Sigma_list = Sigma_list, X = X
+  )
 }

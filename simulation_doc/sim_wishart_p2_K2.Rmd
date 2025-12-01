@@ -107,7 +107,8 @@ It might be NOT possible based on the proof of Proposition 2 in Yakowitz and Spr
 ```{r}
 # run the model with EM algorithm
 set.seed(1234)
-fit3 <- moewishart(S_list, method = "em",
+fit3 <- moewishart(S_list,
+  method = "em",
   K = my_K_intial, init_pi = c(0.1, 0.9),
   niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
 )

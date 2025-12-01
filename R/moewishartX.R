@@ -66,32 +66,32 @@ mewishartX <- function(S_list,
   #   K      : number of experts/clusters
   #
   # Returns samples for Sigma_k, nu_k, z, and gating coefficients Beta
-  
-  
+
+
   if (!method %in% c("bayes", "em")) {
     stop("Argument 'method' must be either 'bayes' or 'em'!")
   }
-  
+
   # TODO: remove redundant code for the common calculations between full Bayesian and EM algorithm
   if (method == "bayes") {
     n <- length(S_list)
     p <- nrow(S_list[[1]])
     q <- ncol(X)
     if (n != nrow(X)) stop("Number of rows in X must equal length(S_list).")
-    
+
     # Priors / defaults
     if (is.null(nu0)) nu0 <- p + 2
     if (is.null(Psi0)) Psi0 <- diag(p)
     if (is.null(init_nu)) init_nu <- rep(p + 2, K)
-    
+
     # Vectorize S for fast trace computations
     S_mat <- t(sapply(S_list, as.vector)) # n x p^2
     log_det_S <- sapply(S_list, function(x) as.numeric(determinant(x, logarithm = TRUE)$modulus))
-    
+
     # initialize z (kmeans on vectorized matrices)
     km <- kmeans(S_mat, centers = K, nstart = 5)
     z <- km$cluster
-    
+
     # initialize cluster params
     Sigma_k <- array(0, c(p, p, K))
     nu_k <- init_nu
@@ -105,12 +105,12 @@ mewishartX <- function(S_list,
         Sigma_k[, , k] <- (Psi0 + S_sum) / (nu0 + length(idx) * nu_k[k] - p - 1)
       }
     }
-    
+
     # Initialize gating coefficients Beta: q x (K-1), last column zero for identifiability
     Beta <- matrix(0, nrow = q, ncol = K) # we keep full K but enforce Beta[,K] = 0
     Beta[, 1:(K - 1)] <- matrix(rnorm(q * (K - 1), 0, 0.1), nrow = q, ncol = K - 1)
     Beta[, K] <- 0
-    
+
     # helper: compute pi_ik matrix (n x K) given Beta
     softmax_rows <- function(L) {
       # L: n x K matrix of linear predictors
@@ -128,9 +128,9 @@ mewishartX <- function(S_list,
       expL <- exp(Ls)
       expL / rowSums(expL)
     }
-    
+
     pi_ik <- compute_pi_ik(X, Beta) # n x K
-    
+
     # Storage
     nsave <- floor((niter - burnin) / thin)
     if (nsave < 1) nsave <- 1
@@ -141,10 +141,10 @@ mewishartX <- function(S_list,
     out_pi_mean <- array(0, dim = c(n, K)) # accumulate posterior mean of pi_ik
     logliks <- numeric(niter)
     iter_save <- 0
-    
+
     # pre-alloc
     logpost <- matrix(0, n, K)
-    
+
     start_time <- Sys.time()
     for (iter in 1:niter) {
       # --- Step 1: compute log-likelihood parts per cluster (vectorized) ---
@@ -162,7 +162,7 @@ mewishartX <- function(S_list,
         # log posterior (pointwise) = log pi_ik + likelihood terms
         logpost[, k] <- log(pi_ik[, k] + 1e-300) + term1 + term2 + term3 + term4
       }
-      
+
       # --- Step 2: sample z (categorical per i using pi_ik and likelihood) ---
       for (i in 1:n) {
         lp <- logpost[i, ]
@@ -171,7 +171,7 @@ mewishartX <- function(S_list,
         prob <- prob / sum(prob)
         z[i] <- sample.int(K, 1, prob = prob)
       }
-      
+
       # --- Step 3: update gating coefficients Beta via MH ---
       # We'll update the (K-1) free columns jointly (size q*(K-1)).
       # Flatten current free parameters
@@ -195,7 +195,7 @@ mewishartX <- function(S_list,
         pi_ik <- pi_prop
         # optionally track acceptance
       }
-      
+
       # --- Step 4: update Sigma_k using current assignments z ---
       for (k in 1:K) {
         idx <- which(z == k)
@@ -212,7 +212,7 @@ mewishartX <- function(S_list,
           Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
         }
       }
-      
+
       # --- Step 5: update nu_k (MH) as before ---
       if (estimate_nu) {
         for (k in 1:K) {
@@ -250,12 +250,12 @@ mewishartX <- function(S_list,
           }
         }
       }
-      
+
       # --- Compute loglik approx for monitoring ---
       max_l <- apply(logpost, 1, max)
       row_sums <- exp(logpost - max_l)
       logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
-      
+
       # --- Save samples after burnin and thinning ---
       if (iter > burnin && ((iter - burnin) %% thin == 0)) {
         iter_save <- iter_save + 1
@@ -267,18 +267,18 @@ mewishartX <- function(S_list,
         }
         out_pi_mean <- out_pi_mean + pi_ik
       }
-      
+
       if (verbose && (iter %% 500 == 0 || iter == 1)) {
         elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         rate <- iter / elapsed
         cat(sprintf("Iter %4d | LL=%.1f | %.1f iter/sec\n", iter, logliks[iter], rate))
       }
     }
-    
+
     # finalize posterior mean of pi
     n_saved <- max(1, iter_save)
     out_pi_mean <- out_pi_mean / max(1, nsave) # average over saved iterations
-    
+
     ret <- list(
       Beta_samples = out_beta,
       nu_samples = out_nu,
@@ -287,14 +287,16 @@ mewishartX <- function(S_list,
       pi_mean = out_pi_mean,
       loglik = logliks
     )
-  } 
-  
+  }
+
   if (method == "em") {
     maxit <- niter
-    ret <- moewishartX.em(S_list, X, K, maxit, tol, verbose,
-                              init, estimate_nu, init_nu, ridge)
+    ret <- moewishartX.em(
+      S_list, X, K, maxit, tol, verbose,
+      init, estimate_nu, init_nu, ridge
+    )
   }
-  
+
   return(ret)
 }
 
@@ -302,45 +304,44 @@ mewishartX <- function(S_list,
 
 moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
                            init = NULL, estimate_nu = FALSE, init_nu = NULL, ridge = 1e-8) {
-  
   n <- length(S_list)
   p <- nrow(S_list[[1]])
   q <- ncol(X)
-  
+
   # helper: log multivariate gamma derivative (psi_p) and its derivative
   psi_p <- function(a, p) sum(digamma(a + (1 - (1:p)) / 2))
   trigamma_p <- function(a, p) sum(trigamma(a + (1 - (1:p)) / 2))
-  
-  
+
+
   # log density of Wishart S ~ W_p(nu, Sigma)
   # ### OPTIMIZATION: Pass precomputed detS to avoid recalculating it inside loops
   log_dWishart <- function(S, nu, Sigma, detS_val = NULL) {
-    if(is.null(detS_val)) {
+    if (is.null(detS_val)) {
       detS_val <- as.numeric(determinant(S, logarithm = TRUE)$modulus)
     }
     detSigma <- as.numeric(determinant(Sigma, logarithm = TRUE)$modulus)
     term1 <- ((nu - p - 1) / 2) * detS_val
-    term2 <- -0.5 * sum(diag(solve(Sigma, S))) 
-    term3 <- - (nu * p / 2) * log(2) - (nu / 2) * detSigma - lgamma_multivariate(nu / 2, p)
+    term2 <- -0.5 * sum(diag(solve(Sigma, S)))
+    term3 <- -(nu * p / 2) * log(2) - (nu / 2) * detSigma - lgamma_multivariate(nu / 2, p)
     term1 + term2 + term3
   }
-  
+
   lgamma_multivariate <- function(a, p) {
     sum(lgamma(a + (1 - (1:p)) / 2)) + (p * (p - 1) / 4) * log(pi)
   }
-  
+
   # --- CORRECTION 1: BREAK SYMMETRY IN INITIALIZATION ---
   if (is.null(init)) {
     # Initialize with random noise so clusters can diverge
     gamma <- matrix(runif(n * K), n, K)
     gamma <- gamma / rowSums(gamma)
-    
+
     if (is.null(init_nu)) init_nu <- rep(p + 5, K)
   } else {
-    gamma <- init$gamma 
+    gamma <- init$gamma
     if (is.null(init_nu) && !is.null(init$nu)) init_nu <- init$nu
   }
-  
+
   compute_A_nk <- function(gamma) {
     n_k <- colSums(gamma)
     A_list <- vector("list", K)
@@ -352,14 +353,14 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
     }
     list(A = A_list, n_k = n_k)
   }
-  
+
   pars <- list()
   if (is.null(init) || is.null(init$beta)) {
     beta_vec <- rep(0, q * (K - 1))
   } else {
     beta_vec <- as.numeric(init$beta)
   }
-  
+
   if (is.null(init) || is.null(init$Sigma)) {
     pooled <- Reduce("+", S_list) / n
     if (is.null(init_nu)) init_nu <- rep(p + 5, K)
@@ -370,121 +371,123 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
   } else {
     Sigma_list <- init$Sigma
   }
-  
+
   if (is.null(init_nu)) init_nu <- rep(p + 5, K)
   nu_vec <- init_nu
-  
+
   loglik_hist <- numeric(maxit)
   small_eps <- ridge
-  
+
   gating_probs_from_beta <- function(beta_vec) {
     B <- matrix(0, q, K)
     if (K > 1) {
       B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
     }
-    eta <- X %*% B 
+    eta <- X %*% B
     eta_max <- apply(eta, 1, max)
     exp_eta <- exp(eta - eta_max)
     denom <- rowSums(exp_eta)
     exp_eta / denom
   }
-  
+
   neg_wt_multinom <- function(beta_vec, gamma) {
-    pi_mat <- gating_probs_from_beta(beta_vec) 
+    pi_mat <- gating_probs_from_beta(beta_vec)
     # prevent log(0)
     ll <- sum(gamma * log(pi_mat + 1e-300))
     -ll
   }
-  
+
   grad_wt_multinom <- function(beta_vec, gamma) {
     B <- matrix(0, q, K)
     if (K > 1) B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
-    pi_mat <- gating_probs_from_beta(beta_vec) 
+    pi_mat <- gating_probs_from_beta(beta_vec)
     grad_mat <- matrix(0, q, K - 1)
     for (k in 1:(K - 1)) {
       # gradient of NEGATIVE likelihood is sum((pi - gamma) * X)
-      diff <- pi_mat[, k] - gamma[, k] 
+      diff <- pi_mat[, k] - gamma[, k]
       grad_mat[, k] <- colSums(X * diff)
     }
-    as.numeric(grad_mat) 
+    as.numeric(grad_mat)
   }
-  
+
   # --- CORRECTION 2: FIX NEWTON-RAPHSON DERIVATIVE ---
   solve_nu <- function(init_nu, A_k, n_k, mean_logS_k, p, maxit = 20) {
     nu <- max(init_nu, p + 1.001)
-    
+
     # OPTIMIZATION: Compute logdet(A) once outside the loop
     # A_k is constant during the nu update
     logdetA <- as.numeric(determinant(A_k, logarithm = TRUE)$modulus)
-    
+
     for (it in 1:maxit) {
       # Use algebraic property: log|A / (n*nu)| = log|A| - p*log(n*nu)
       logdetSigma <- logdetA - p * log(n_k * nu)
-      
+
       # Objective function
       lhs <- psi_p(nu / 2, p)
       rhs <- mean_logS_k - logdetSigma - p * log(2)
       fval <- lhs - rhs
-      
+
       if (abs(fval) < 1e-6) break
-      
+
       # Derivative
       df <- 0.5 * trigamma_p(nu / 2, p) - (p / nu)
-      
+
       # Newton update
       nu_new <- nu - fval / df
-      
+
       # Boundary check
       if (!is.finite(nu_new) || nu_new <= p + 1e-6) {
         nu_new <- (nu + (p + 1.0)) / 2
       }
-      if (abs(nu_new - nu) < 1e-6) { nu <- nu_new; break }
+      if (abs(nu_new - nu) < 1e-6) {
+        nu <- nu_new
+        break
+      }
       nu <- nu_new
     }
     max(nu, p + 1.001)
   }
-  
+
   # precompute log|S_i| for all i
   logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
-  
+
   # EM loop
   for (iter in 1:maxit) {
-    
     # --- E-step ---
-    pi_mat <- gating_probs_from_beta(beta_vec) 
+    pi_mat <- gating_probs_from_beta(beta_vec)
     log_f_mat <- matrix(NA, n, K)
-    
+
     for (k in 1:K) {
       for (i in 1:n) {
         # Use precomputed logdetS to speed up
         log_f_mat[i, k] <- log_dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]], logdetS[i])
       }
     }
-    
+
     log_post <- log(pi_mat + 1e-300) + log_f_mat
     row_max <- apply(log_post, 1, max)
     exp_shifted <- exp(log_post - row_max)
     row_sums <- rowSums(exp_shifted)
     gamma <- exp_shifted / row_sums
-    
+
     loglik <- sum(row_max + log(row_sums))
     loglik_hist[iter] <- loglik
-    
+
     if (verbose) cat(sprintf("Iter %3d  loglik = %.6f\n", iter, loglik))
-    
+
     if (iter > 1 && abs(loglik - loglik_hist[iter - 1]) < tol) {
       if (verbose) cat("Converged by loglik tolerance.\n")
       break
     }
-    
+
     # --- M-step ---
     an <- compute_A_nk(gamma)
     A_list <- an$A
     n_k <- an$n_k
-    
+
     # Avoid division by zero if a cluster dies
-    valid_k <- n_k > 1e-6 
-    
+    valid_k <- n_k > 1e-6
+
     for (k in 1:K) {
       if (valid_k[k]) {
         if (!estimate_nu) {
@@ -492,30 +495,34 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
           nu_old <- nu_vec[k]
           nu_vec[k] <- solve_nu(nu_old, A_list[[k]], n_k[k], mean_logS_k, p)
         }
-        
+
         # Update Sigma using the NEW nu
         Sigma_new <- A_list[[k]] / (nu_vec[k] * n_k[k])
         Sigma_new <- Sigma_new + diag(small_eps, p)
         Sigma_list[[k]] <- (Sigma_new + t(Sigma_new)) / 2
       } else {
         # Reset empty component (optional strategy)
-        if(verbose) cat(sprintf("Resetting component %d\n", k))
+        if (verbose) cat(sprintf("Resetting component %d\n", k))
         nu_vec[k] <- p + 5
         Sigma_list[[k]] <- diag(1, p)
       }
     }
-    
+
     # Update beta
-    opt <- optim(beta_vec, fn = neg_wt_multinom, gr = grad_wt_multinom,
-                 method = "BFGS", gamma = gamma, control = list(maxit = 50))
+    opt <- optim(beta_vec,
+      fn = neg_wt_multinom, gr = grad_wt_multinom,
+      method = "BFGS", gamma = gamma, control = list(maxit = 50)
+    )
     beta_vec <- opt$par
   }
-  
+
   Beta_mat <- matrix(0, q, K)
   if (K > 1) Beta_mat[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
   colnames(Beta_mat) <- paste0("comp", 1:K)
-  
-  list(K = K, p = p, q = q, n = n,
-       Beta = Beta_mat, Sigma = Sigma_list, nu = nu_vec,
-       gamma = gamma, loglik = loglik_hist[1:iter], iter = iter)
+
+  list(
+    K = K, p = p, q = q, n = n,
+    Beta = Beta_mat, Sigma = Sigma_list, nu = nu_vec,
+    gamma = gamma, loglik = loglik_hist[1:iter], iter = iter
+  )
 }

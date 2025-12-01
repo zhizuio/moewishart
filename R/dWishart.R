@@ -25,26 +25,26 @@
 #' @export
 dWishart <- function(S, nu, Sigma, logarithm = TRUE) {
   p <- ncol(S)
-  
+
   # Calculate log-determinants safely
   detS_res <- determinant(S, logarithm = logarithm)
   detSig_res <- determinant(Sigma, logarithm = logarithm)
-  
+
   ldS <- as.numeric(detS_res$modulus)
   ldSigma <- as.numeric(detSig_res$modulus)
-  
+
   # Calculate trace(Sigma^{-1} S) efficiently
   # solving Sigma x = S is better than explicit inverse
-  invSigma_S <- sum(diag(solve(Sigma, S))) 
-  
+  invSigma_S <- sum(diag(solve(Sigma, S)))
+
   if (logarithm) {
     term <- ((nu - p - 1) / 2) * ldS - (nu / 2) * ldSigma - 0.5 * invSigma_S
     ret <- term - (nu * p / 2) * log(2) - lmvgamma(nu / 2, p)
   } else {
     # TODO: double check if the following calculation is correct
-    term <-  ldS^(((nu - p - 1) / 2)) /  ldSigma^(nu / 2) / exp(sqrt(invSigma_S)) 
+    term <- ldS^(((nu - p - 1) / 2)) / ldSigma^(nu / 2) / exp(sqrt(invSigma_S))
     ret <- term / 2^(nu * p / 2) / exp(lmvgamma(nu / 2, p))
   }
-  
+
   return(ret)
 }
