@@ -389,14 +389,14 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
     denom <- rowSums(exp_eta)
     exp_eta / denom
   }
-
+  
   neg_wt_multinom <- function(beta_vec, gamma) {
     pi_mat <- gating_probs_from_beta(beta_vec)
     # prevent log(0)
     ll <- sum(gamma * log(pi_mat + 1e-300))
     -ll
   }
-
+  
   grad_wt_multinom <- function(beta_vec, gamma) {
     B <- matrix(0, q, K)
     if (K > 1) B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
@@ -490,7 +490,7 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
 
     for (k in 1:K) {
       if (valid_k[k]) {
-        if (!estimate_nu) {
+        if (estimate_nu) {
           mean_logS_k <- sum(gamma[, k] * logdetS) / n_k[k]
           nu_old <- nu_vec[k]
           nu_vec[k] <- solve_nu(nu_old, A_list[[k]], n_k[k], mean_logS_k, p)
