@@ -21,6 +21,8 @@ moewishart(
   nu_prior_a = 2,
   nu_prior_b = 0.1,
   mh_sigma = 1,
+  n_restarts = 3,
+  restart_iters = 20,
   tol = 1e-06,
   verbose = TRUE
 )
@@ -57,6 +59,10 @@ moewishart(
 \item{nu_prior_b}{TBA}
 
 \item{mh_sigma}{TBA}
+
+\item{n_restarts}{TBA}
+
+\item{restart_iters}{TBA}
 
 \item{tol}{TBA}
 

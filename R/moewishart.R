@@ -24,6 +24,8 @@
 #' @param nu_prior_a TBA
 #' @param nu_prior_b TBA
 #' @param mh_sigma TBA
+#' @param n_restarts TBA
+#' @param restart_iters TBA
 #' @param tol TBA
 #' @param verbose TBA
 #'
@@ -55,6 +57,8 @@ moewishart <- function(S_list,
                        nu_prior_a = 2,
                        nu_prior_b = 0.1,
                        mh_sigma = 1,
+                       n_restarts = 3,
+                       restart_iters = 20, 
                        tol = 1e-6,
                        verbose = TRUE) {
   if (!method %in% c("bayes", "em")) {
@@ -323,7 +327,9 @@ moewishart <- function(S_list,
   if (method == "em") {
     maxiter <- niter
     ret <- moewishart.em(
-      S_list, K, init_pi, init_Sigma, init_nu,
+      S_list, K, 
+      n_restarts, restart_iters,
+      init_pi, init_Sigma, init_nu,
       maxiter, tol, estimate_nu, verbose
     )
   }
@@ -334,6 +340,8 @@ moewishart <- function(S_list,
 # -- Internal function with EM algorithm for the Wishart mixture model--
 
 moewishart.em <- function(S_list, K,
+                          n_restarts = 3,
+                          restart_iters = 20, 
                           init_pi = NULL,
                           init_Sigma = NULL,
                           init_nu = NULL,
@@ -349,36 +357,88 @@ moewishart.em <- function(S_list, K,
 
   # --- 1. Initialization (CORRECTED) ---
 
-  # Mixing proportions
-  if (is.null(init_pi)) {
-    pi_k <- rep(1 / K, K)
+  # =========================================================================
+  # PHASE 1: Initialization Selection (Multiple Restarts)
+  # =========================================================================
+  
+  # We only run restarts if the user did NOT provide specific starting Sigma/pi
+  if (is.null(init_Sigma) && is.null(init_pi) && is.null(init_nu)) {
     
-    # Initialize Parameters
-    # Use vectorized data for kmeans
-    # z <- kmeans(t(sapply(S_list, as.vector)), centers = K, nstart = 5)$cluster
-    # pi_k <- table(factor(z, levels = 1:K)) / n
+    if (verbose) cat("Running", n_restarts, "initialization restarts...\n")
+    
+    best_start_loglik <- -Inf
+    best_params <- list()
+    
+    for (r in 1:n_restarts) {
+      
+      # A. Random Initialization for this attempt
+      # Default nu
+      curr_nu <- if (is.null(init_nu)) rep_len(c(p+1,p + 5), length.out = K) else init_nu
+      tamtam <- rgamma(K,shape = 1)
+      curr_pi <-tamtam/sum(tamtam)
+      
+      # Random centers
+      rand_indices <- sample(seq_len(n), K)
+      curr_Sigma <- lapply(seq_len(K), function(k) {
+        idx <- rand_indices[k]
+        S_list[[idx]] / curr_nu[k]
+      })
+      
+      # B. Run "Small EM" (Short Loop)
+      curr_loglik <- -Inf
+      
+      for (small_it in 1:restart_iters) {
+        # E-Step (Simplified)
+        logdens <- matrix(NA, n, K)
+        for (k in seq_len(K)) {
+          for (i in seq_len(n)) {
+            if(is.null(curr_Sigma[[k]])) browser()
+            logdens[i, k] <- dWishart(S_list[[i]], curr_nu[k], curr_Sigma[[k]], 
+                                      logarithm = TRUE)
+          }
+          logdens[, k] <- logdens[, k] + log(curr_pi[k])
+        }
+        maxlog <- apply(logdens, 1, max)
+        denom <- maxlog + log(rowSums(exp(logdens - maxlog)))
+        logtau <- sweep(logdens, 1, denom, FUN = "-")
+        tau <- exp(logtau)
+        curr_loglik <- sum(denom)
+        
+        # M-Step (Simplified - update Pi and Sigma only, keep Nu fixed for stability in init)
+        N_k <- colSums(tau)
+        curr_pi <- N_k / n
+        
+        # Check for collapse
+        if (any(N_k < 1e-6)) { curr_loglik <- -Inf; break } 
+        
+        for (k in seq_len(K)) {
+          Ssum <- matrix(0, p, p)
+          for(i in seq_len(n)) if(tau[i,k] > 1e-10) Ssum <- Ssum + tau[i,k]*S_list[[i]]
+          curr_Sigma[[k]] <- Ssum / (N_k[k] * curr_nu[k])
+        }
+      }
+      
+      # C. Compare and Store
+      if (verbose) cat(sprintf("  -> Restart %d: Loglik = %.2f\n", r, curr_loglik))
+      
+      if (curr_loglik > best_start_loglik) {
+        best_start_loglik <- curr_loglik
+        best_params <- list(pi = curr_pi, Sigma = curr_Sigma, nu = curr_nu)
+      }
+    }
+    
+    # Set the main loop variables to the winner
+    pi_k <- best_params$pi
+    Sigma_k <- best_params$Sigma
+    nu_k <- best_params$nu
+    
   } else {
-    pi_k <- init_pi
-  }
-
-  # Degrees of freedom
-  if (is.null(init_nu)) {
-    nu_k <- rep(p + 5, K)
-  } else {
-    nu_k <- init_nu
-  }
-
-  # Scale Matrices: Random initialization to break symmetry
-  if (is.null(init_Sigma)) {
-    # Pick K random indices from the data to act as initial centers
-    # We divide by nu_k to get the scale matrix, as E[S] = nu * Sigma
-    rand_indices <- sample(seq_len(n), K)
-    Sigma_k <- lapply(seq_len(K), function(k) {
-      idx <- rand_indices[k]
-      # Slight perturbation or just use the raw matrix normalized by df
-      S_list[[idx]] / nu_k[k]
-    })
-  } else {
+    if (is.null(init_Sigma) || is.null(init_pi) || is.null(init_nu)) {
+      stop("Please provide all initial values of 'init_Sigma', 'init_pi' and 'init_nu'!")
+    }
+    # Manual initialization provided by user
+    if (is.null(init_pi)) pi_k <- rep(1 / K, K) else pi_k <- init_pi
+    if (is.null(init_nu)) nu_k <- rep(p + 5, K) else nu_k <- init_nu
     Sigma_k <- init_Sigma
   }
 
@@ -392,6 +452,7 @@ moewishart.em <- function(S_list, K,
     for (k in seq_len(K)) {
       # Vectorize this loop if possible, but loop is okay for readability
       for (i in seq_len(n)) {
+        if(is.null(Sigma_k[[k]])) browser()
         logdens[i, k] <- dWishart(S_list[[i]], nu_k[k], Sigma_k[[k]],
           logarithm = TRUE
         )
@@ -461,9 +522,6 @@ moewishart.em <- function(S_list, K,
         lhs <- (T1k / N_k[k]) - logdetSig - p * log(2)
 
         # Newton-Raphson functions
-        f <- function(v) {
-          lhs - sum(digamma(v / 2 + (1 - seq_len(p)) / 2)) + p * log(v / 2)
-        }
 
         f_optim <- function(v) {
           # We want to find root of: LHS - sum(digamma(v/2 + ...))
@@ -479,7 +537,7 @@ moewishart.em <- function(S_list, K,
 
         # Newton Iteration
         curr_nu <- nu_k[k]
-        for (nm in 1:20) {
+        for (nm in 1:50) {
           val <- f_optim(curr_nu)
           grad <- fp_optim(curr_nu)
           if (is.na(val) || is.na(grad) || abs(grad) < 1e-8) break

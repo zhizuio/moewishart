@@ -39,7 +39,7 @@ rm(list = ls())
 
 library(moewishart)
 
-set.seed(123)
+set.seed(5)
 n <- 200 # number of subjects
 p <- 2
 
@@ -120,7 +120,7 @@ as.data.frame(Sigma_list)
 
 ```{r}
 # run the model with EM algorithm
-set.seed(1234)
+set.seed(123)
 fit3 <- moewishart(S_list,
   method = "em",
   K = my_K_intial, #init_pi = c(0.33, 0.33, 0.34),
