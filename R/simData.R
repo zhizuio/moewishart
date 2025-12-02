@@ -52,6 +52,7 @@ simData <- function(n = 200, p = 2,
 
   # simulate covarites
   X <- NULL
+  betas <- NULL
   if (Xq > 0) {
     pis <- matrix(NA, nrow = n, ncol = K)
     betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
