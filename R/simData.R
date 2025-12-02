@@ -101,6 +101,6 @@ simData <- function(n = 200, p = 2,
     S = S_list, z = z_true,
     nu = nus, pi = pis,
     Sigma_list = Sigma_list, 
-    X = X, betas = betas[, -K]
+    X = X, betas = betas
   )
 }
