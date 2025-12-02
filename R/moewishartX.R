@@ -3,7 +3,7 @@
 #' @description
 #' TBA
 #'
-#' @name mewishartX
+#' @name moewishartX
 #'
 #' @importFrom utils combn
 #' @importFrom stats optim
@@ -41,7 +41,7 @@
 #' p <- 10
 #'
 #' @export
-mewishartX <- function(S_list,
+moewishartX <- function(S_list,
                        X, # n x q matrix of covariates for gating
                        K,
                        niter = 3000,

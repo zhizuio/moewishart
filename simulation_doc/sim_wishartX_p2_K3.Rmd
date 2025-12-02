@@ -61,7 +61,7 @@ Sigma_list <- dat$Sigma_list
 # run a moewishart model with covariates
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
-fit <- mewishartX(S_list, K = 3, X = dat$X)
+fit <- moewishartX(S_list, K = 3, X = dat$X)
 end_time <- Sys.time()
 elapsed_time <- end_time - start_time
 ```
@@ -98,7 +98,7 @@ as.data.frame(Sigma_list)
 ```{r}
 # run the model with EM algorithm
 set.seed(1234)
-fit3 <- mewishartX(S_list, K = 3, X = dat$X, method = "em")
+fit3 <- moewishartX(S_list, K = 3, X = dat$X, method = "em")
 
 # EM estimates
 colMeans(fit3$gamma)

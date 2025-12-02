@@ -2,8 +2,8 @@
 
 export(dWishart)
 export(lmvgamma)
-export(mewishartX)
 export(moewishart)
+export(moewishartX)
 export(rdirichlet)
 export(sampleIW)
 export(simData)
