@@ -139,7 +139,7 @@ moewishart <- function(S_list,
     acc_count <- numeric(K) # record acceptance counts of MH for nu
 
     # Start Timer
-    start_time <- Sys.time()
+    # start_time <- Sys.time()
 
     for (iter in 1:niter) {
       # --- Step 1: Update Labels z (The Heavy Lifting) ---
@@ -307,11 +307,11 @@ moewishart <- function(S_list,
 
       if (verbose && (iter %% 500 == 0 || iter == 1)) {
         # Calculate speed
-        elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-        rate <- iter / elapsed
+        # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+        # rate <- iter / elapsed
         cat(sprintf(
-          "Iter %4d | LL=%.1f | %.1f iter/sec | acc_rate_nu=[%.3f %.3f]\n",
-          iter, logliks[iter], rate, min(acc_count / iter), max(acc_count / iter)
+          "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f]\n",
+          iter, logliks[iter], min(acc_count / iter), max(acc_count / iter)
         ))
       }
     }
