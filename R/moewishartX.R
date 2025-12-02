@@ -126,7 +126,8 @@ moewishartX <- function(S_list,
 
     # pre-alloc
     logpost <- matrix(0, n, K)
-    acc_count <- numeric(K) # record acceptance counts of MH for nu
+    acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
+    acc_count_beta <- 0 # record acceptance counts of MH for beta
 
     # start_time <- Sys.time()
     for (iter in 1:niter) {
@@ -177,6 +178,7 @@ moewishartX <- function(S_list,
         Beta <- Beta_prop
         pi_ik <- pi_prop
         # optionally track acceptance
+        acc_count_beta <- acc_count_beta + 1
       }
 
       # --- Step 4: update Sigma_k using current assignments z ---
@@ -229,7 +231,7 @@ moewishartX <- function(S_list,
             lp_new <- (nu_prior_a - 1) * log(prop_nu) - nu_prior_b * prop_nu + log(prop_nu)
             if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
               nu_k[k] <- prop_nu
-              acc_count[k] <- acc_count[k] + 1
+              acc_count_nu[k] <- acc_count_nu[k] + 1
             }
           }
         }
@@ -255,8 +257,9 @@ moewishartX <- function(S_list,
       if (verbose && (iter %% 500 == 0 || iter == 1)) {
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
-        cat(sprintf("Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f]\n",
-        iter, logliks[iter], min(acc_count / iter), max(acc_count / iter)
+        cat(sprintf("Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=%.3f\n",
+        iter, logliks[iter], min(acc_count_nu / iter), max(acc_count_nu / iter),
+        acc_count_beta / iter
         ))
       }
     }

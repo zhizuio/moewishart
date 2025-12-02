@@ -119,13 +119,14 @@ as.data.frame(Sigma_list)
 # run MoE model with only intercepts as covariates
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
-fitMoE <- moewishartX(S_list, K = 3, mh_sigma = 0.2,
+fitMoE <- moewishartX(S_list, K = 3, 
+                      mh_sigma = 0.2, mh_beta = 0.4,
                       niter = 3000, burnin = 1000, 
                       X = matrix(rep(1, n), ncol = 1))
 end_time <- Sys.time()
 elapsed_time <- end_time - start_time
 
-str(fitMoE)
+#str(fitMoE)
 # posterior summaries
 
 colMeans(fitMoE$pi) # estimated pis
@@ -137,10 +138,10 @@ dat$nu # true nu
 # Sum all arrays in the list and divide by the number of saved iterations
 MoE_mean <- Reduce("+", fitMoE$Sigma) / length(fitMoE$Sigma)
 # View the mean covariance matrix for Cluster 1
-print(MoE_mean[, , 1])
-print(MoE_mean[, , 2])
-print(MoE_mean[, , 3])
-as.data.frame(Sigma_list)
+#print(MoE_mean[, , 1])
+#print(MoE_mean[, , 2])
+#print(MoE_mean[, , 3])
+#as.data.frame(Sigma_list)
 (a2 <- apply(MoE_mean, MARGIN = 3, function(aa) min(sapply(Sigma_list, function(x) sum((aa - x)^2)))))
 ```
 
