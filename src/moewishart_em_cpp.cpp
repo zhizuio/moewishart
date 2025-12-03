@@ -103,6 +103,7 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
     arma::mat resp = arma::zeros<arma::mat>(n, K);
     double prev_loglik = -datum::inf;
     double loglik = -datum::inf;
+    arma::vec loglik_mcmc;
 
     if (verbose) Rcout << "Mixture-Wishart init: n=" << n << " p=" << p << " K=" << K << "\n";
 
@@ -139,6 +140,9 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
         }
         loglik = new_loglik;
         if (verbose) Rcout << "EM iter " << em << ", loglik=" << loglik << "\n";
+
+        arma::vec loglik_vec = {loglik};
+        loglik_mcmc = arma::join_cols(loglik_mcmc, loglik_vec);
 
         // convergence check
         if (em > 0)
@@ -282,7 +286,7 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
                _["Sigma"] = Sigma_out,
                _["pi"] = pi,
                _["nu"] = nu,
-               _["loglik"] = loglik,
+               _["loglik"] = loglik_mcmc,
                _["responsibilities"] = resp
            );
 }
