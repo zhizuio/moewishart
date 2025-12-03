@@ -68,6 +68,9 @@ elapsed_time
 <br> 
 
 ```{r}
+# likelihood
+plot(fit$loglik, type = "l", lty = 1, xlab = "Iteration", ylab = "Loglikelihood")
+
 # posterior summaries
 colMeans(fit$pi) # estimated pi
 colMeans(dat$pi) # true pi

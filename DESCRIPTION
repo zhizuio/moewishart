@@ -11,5 +11,7 @@ License: GPL-3
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-Imports: utils, stats
-NeedsCompilation: no
+LinkingTo: Rcpp, RcppArmadillo
+Imports: Rcpp, utils, stats
+NeedsCompilation: yes
+SystemRequirements: C++17

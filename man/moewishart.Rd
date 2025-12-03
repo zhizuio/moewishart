@@ -25,6 +25,7 @@ moewishart(
   n_restarts = 3,
   restart_iters = 20,
   tol = 1e-06,
+  cpp = FALSE,
   verbose = TRUE
 )
 }
@@ -68,6 +69,8 @@ moewishart(
 \item{restart_iters}{TBA}
 
 \item{tol}{TBA}
+
+\item{cpp}{test for Rcpp code}
 
 \item{verbose}{TBA}
 }

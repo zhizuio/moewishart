@@ -5,7 +5,8 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-## @useDynLib moewishart, .registration = TRUE
+#' @useDynLib moewishart, .registration = TRUE
+#' 
 ## usethis namespace: end
 NULL
 
