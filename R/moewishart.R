@@ -20,6 +20,7 @@
 #' @param init_pi TBA
 #' @param init_nu TBA
 #' @param init_Sigma TBA
+#' @param marginal.z logical value to determine if using marginal z with integrating pi out
 #' @param estimate_nu TBA
 #' @param nu_prior_a TBA
 #' @param nu_prior_b TBA
@@ -53,6 +54,7 @@ moewishart <- function(S_list,
                        init_pi = NULL,
                        init_nu = NULL,
                        init_Sigma = NULL,
+                       marginal.z = TRUE,
                        estimate_nu = TRUE,
                        nu_prior_a = 2,
                        nu_prior_b = 0.1,
@@ -170,9 +172,15 @@ moewishart <- function(S_list,
         term2 <- -0.5 * tr_val
         term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
         term4 <- -lmvgamma(nu / 2, p)
-
+        
         # logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
-        logpost[, k] <- log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300) + term1 + term2 + term3 + term4
+        logpost[, k] <- term1 + term2 + term3 + term4
+        if (marginal.z) {
+          logpost[, k] <- logpost[, k] + log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300)
+        } else {
+          logpost[, k] <- logpost[, k] + log(pi_k[k] + 1e-300)
+        }
+        
       }
 
       # Sample z

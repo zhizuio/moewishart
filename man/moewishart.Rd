@@ -17,6 +17,7 @@ moewishart(
   init_pi = NULL,
   init_nu = NULL,
   init_Sigma = NULL,
+  marginal.z = TRUE,
   estimate_nu = TRUE,
   nu_prior_a = 2,
   nu_prior_b = 0.1,
@@ -51,6 +52,8 @@ moewishart(
 \item{init_nu}{TBA}
 
 \item{init_Sigma}{TBA}
+
+\item{marginal.z}{logical value to determine if using marginal z with integrating pi out}
 
 \item{estimate_nu}{TBA}
 
