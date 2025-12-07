@@ -42,24 +42,24 @@
 #'
 #' @export
 moewishartX <- function(S_list,
-                       X, # n x q matrix of covariates for gating
-                       K,
-                       niter = 3000,
-                       burnin = 1000,
-                       method = "bayes",
-                       thin = 1,
-                       nu0 = NULL,
-                       Psi0 = NULL,
-                       init_nu = NULL,
-                       estimate_nu = TRUE,
-                       nu_prior_a = 2, nu_prior_b = 0.1,
-                       mh_sigma = 0.1,
-                       mh_beta = 0.05, # MH proposal sd for gating coeffs
-                       sigma_beta = 10, # Gaussian prior sd for beta
-                       init = NULL,
-                       tol = 1e-6,
-                       ridge = 1e-8,
-                       verbose = TRUE) {
+                        X, # n x q matrix of covariates for gating
+                        K,
+                        niter = 3000,
+                        burnin = 1000,
+                        method = "bayes",
+                        thin = 1,
+                        nu0 = NULL,
+                        Psi0 = NULL,
+                        init_nu = NULL,
+                        estimate_nu = TRUE,
+                        nu_prior_a = 2, nu_prior_b = 0.1,
+                        mh_sigma = 0.1,
+                        mh_beta = 0.05, # MH proposal sd for gating coeffs
+                        sigma_beta = 10, # Gaussian prior sd for beta
+                        init = NULL,
+                        tol = 1e-6,
+                        ridge = 1e-8,
+                        verbose = TRUE) {
   # Mixture-of-Experts Gibbs sampler for Wishart clusters
   #   S_list: list of n SPD matrices (p x p)
   #   X      : n x q covariate matrix for gating network (include intercept if desired)
@@ -127,7 +127,7 @@ moewishartX <- function(S_list,
     # pre-alloc
     logpost <- matrix(0, n, K)
     acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
-    acc_count_beta <- 0 # record acceptance counts of MH for beta
+    acc_count_beta <- numeric(K - 1) # record acceptance counts of MH for beta
 
     # start_time <- Sys.time()
     for (iter in 1:niter) {
@@ -159,26 +159,29 @@ moewishartX <- function(S_list,
       # --- Step 3: update gating coefficients Beta via MH ---
       # We'll update the (K-1) free columns jointly (size q*(K-1)).
       # Flatten current free parameters
-      free_idx_cols <- 1:(K - 1)
-      Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
-      prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta)
-      Beta_prop <- Beta
-      Beta_prop[, free_idx_cols] <- matrix(prop, nrow = q, ncol = K - 1)
-      Beta_prop[, K] <- 0
-      # compute new pi_ik (n x K)
-      pi_prop <- compute_pi_ik(X, Beta_prop)
-      # log prior for Beta (Gaussian iid)
-      lp_prior_old <- -0.5 * sum(Beta_free^2) / (sigma_beta^2)
-      lp_prior_new <- -0.5 * sum(prop^2) / (sigma_beta^2)
-      # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
-      ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
-      ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
-      log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
-      if (log(runif(1)) < log_accept) {
-        Beta <- Beta_prop
-        pi_ik <- pi_prop
-        # optionally track acceptance
-        acc_count_beta <- acc_count_beta + 1
+      ## free_idx_cols <- 1:(K - 1)
+      ## Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
+      ## Beta_prop <- Beta
+      ## Beta_prop[, free_idx_cols] <- matrix(prop, nrow = q, ncol = K - 1)
+      ## Beta_prop[, K] <- 0
+      for (k in 1:(K - 1)) {
+        Beta_prop <- Beta
+        Beta_prop[, k] <- Beta[, k] + rnorm(q, 0, mh_beta)
+        # compute new pi_ik (n x K)
+        pi_prop <- compute_pi_ik(X, Beta_prop)
+        # log prior for Beta (Gaussian iid)
+        lp_prior_old <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
+        lp_prior_new <- -0.5 * sum((exp(lp) / sum(exp(lp)))^2) / (sigma_beta^2)
+        # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
+        ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
+        ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
+        log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
+        if (log(runif(1)) < log_accept) {
+          Beta <- Beta_prop
+          pi_ik <- pi_prop
+          # optionally track acceptance
+          acc_count_beta[k] <- acc_count_beta[k] + 1
+        }
       }
 
       # --- Step 4: update Sigma_k using current assignments z ---
@@ -257,9 +260,10 @@ moewishartX <- function(S_list,
       if (verbose && (iter %% 500 == 0 || iter == 1)) {
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
-        cat(sprintf("Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=%.3f\n",
-        iter, logliks[iter], min(acc_count_nu / iter), max(acc_count_nu / iter),
-        acc_count_beta / iter
+        cat(sprintf(
+          "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=[%.3f %.3f]\n",
+          iter, logliks[iter], min(acc_count_nu / iter), max(acc_count_nu / iter),
+          min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }
     }
@@ -355,7 +359,7 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
 
   # precompute log|S_i| for all i
   logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
-  
+
   # EM loop
   for (iter in 1:maxit) {
     # --- E-step ---
@@ -365,8 +369,10 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
     for (k in 1:K) {
       for (i in 1:n) {
         # Use precomputed logdetS to speed up
-        log_f_mat[i, k] <- dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]], 
-                                    logdetS[i], logarithm = TRUE)
+        log_f_mat[i, k] <- dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]],
+          logdetS[i],
+          logarithm = TRUE
+        )
       }
     }
 
@@ -416,7 +422,7 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
 
     # Update beta
     opt <- optim(beta_vec,
-      fn = neg_wt_multinom, gr = grad_wt_multinom, 
+      fn = neg_wt_multinom, gr = grad_wt_multinom,
       q, K, X, # Further arguments to be passed to fn and gr
       method = "BFGS", gamma = gamma, control = list(maxit = 50)
     )
@@ -487,28 +493,28 @@ grad_wt_multinom <- function(beta_vec, gamma, q, K, X) {
 # --- CORRECTION 2: FIX NEWTON-RAPHSON DERIVATIVE ---
 solve_nu <- function(init_nu, A_k, n_k, mean_logS_k, p, maxit = 20) {
   nu <- max(init_nu, p + 1.001)
-  
+
   # OPTIMIZATION: Compute logdet(A) once outside the loop
   # A_k is constant during the nu update
   logdetA <- as.numeric(determinant(A_k, logarithm = TRUE)$modulus)
-  
+
   for (it in 1:maxit) {
     # Use algebraic property: log|A / (n*nu)| = log|A| - p*log(n*nu)
     logdetSigma <- logdetA - p * log(n_k * nu)
-    
+
     # Objective function
     lhs <- psi_p(nu / 2, p)
     rhs <- mean_logS_k - logdetSigma - p * log(2)
     fval <- lhs - rhs
-    
+
     if (abs(fval) < 1e-6) break
-    
+
     # Derivative
     df <- 0.5 * trigamma_p(nu / 2, p) - (p / nu)
-    
+
     # Newton update
     nu_new <- nu - fval / df
-    
+
     # Boundary check
     if (!is.finite(nu_new) || nu_new <= p + 1e-6) {
       nu_new <- (nu + (p + 1.0)) / 2
