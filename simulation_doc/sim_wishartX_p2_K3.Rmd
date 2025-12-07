@@ -61,7 +61,7 @@ Sigma_list <- dat$Sigma_list
 # run a moewishart model with covariates
 start_time <- Sys.time() # this has to be before 'set.seed()', otherwise non-reproducible
 set.seed(123)
-fit <- moewishartX(S_list, K = 3, X = dat$X, mh_sigma = 0.2, mh_beta = 0.5)
+fit <- moewishartX(S_list, K = 3, X = dat$X, mh_sigma = 0.2, mh_beta = 1.2)
 end_time <- Sys.time()
 elapsed_time <- end_time - start_time
 ```

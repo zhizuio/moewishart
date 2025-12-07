@@ -127,8 +127,14 @@ moewishartX <- function(S_list,
     # pre-alloc
     logpost <- matrix(0, n, K)
     acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
-    acc_count_beta <- numeric(K - 1) # record acceptance counts of MH for beta
-
+    acc_count_beta <- matrix(0, q, K - 1) # record acceptance counts of MH for beta
+    free_idx_cols <- 1:(K-1)
+    
+    # Spike-and-slab indicators for Beta (q x (K-1))
+    #pi_gamma <- 0.5
+    #Gamma <- matrix(rbinom(q*(K-1), 1, pi_gamma), nrow = q, ncol = K-1)
+    #Gama_samples =  array(NA, dim = c(nsave, q, K-1))
+    
     # start_time <- Sys.time()
     for (iter in 1:niter) {
       # --- Step 1: compute log-likelihood parts per cluster (vectorized) ---
@@ -156,30 +162,81 @@ moewishartX <- function(S_list,
         z[i] <- sample.int(K, 1, prob = prob)
       }
 
-      # --- Step 3: update gating coefficients Beta via MH ---
-      # We'll update the (K-1) free columns jointly (size q*(K-1)).
-      # Flatten current free parameters
-      free_idx_cols <- 1:(K - 1)
-      Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
-      prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta)
-      Beta_prop <- Beta
-      Beta_prop[, free_idx_cols] <- matrix(prop, nrow = q, ncol = K - 1)
-      Beta_prop[, K] <- 0
-      # compute new pi_ik (n x K)
-      pi_prop <- compute_pi_ik(X, Beta_prop)
-      # log prior for Beta (Gaussian iid)
-      lp_prior_old <- -0.5 * sum(Beta_free^2) / (sigma_beta^2)
-      lp_prior_new <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
-      # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
-      ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
-      ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
-      log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
-      if (log(runif(1)) < log_accept) {
-        Beta <- Beta_prop
-        pi_ik <- pi_prop
-        # optionally track acceptance
-        acc_count_beta <- acc_count_beta + 1
+      # --- Step 3: EXACT spike-and-slab coordinate-wise MH update for Beta ---
+      mh_sd_mat <- matrix(mh_beta[1], nrow = q, ncol = K-1)
+      # Current free Beta matrix (q x (K-1))
+      Beta_free <- Beta[, free_idx_cols]
+      
+      # Precompute current label-log-likelihood (based on current pi_ik)
+      ll_current_full <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
+      
+      # === Coordinate-wise MH ===
+      for (j in 1:q) {
+        for (k in 1:(K-1)) {
+          
+          # # -----------------------------
+          # # CASE 1: Gamma = 0 → exact spike at zero
+          # # -----------------------------
+          # if (Gamma[j, k] == 0) {
+          #   Beta[j, k] <- 0
+          #   Beta_free[j, k] <- 0
+          #   next     # skip MH completely
+          # }
+          
+          # -----------------------------
+          # CASE 2: Gamma = 1 → slab → MH update
+          # -----------------------------
+          beta_curr <- Beta_free[j, k]
+          beta_prop <- rnorm(1, mean = beta_curr, sd = mh_sd_mat[j, k])
+          
+          # generate proposal Beta
+          Beta_prop <- Beta
+          Beta_prop[j, k] <- beta_prop
+          
+          # compute proposed pi
+          pi_prop <- compute_pi_ik(X, Beta_prop)
+          
+          # compute likelihood
+          ll_prop_full <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
+          
+          # slab prior Normal(0, sigma_beta^2)
+          lp_old <- -0.5 * (beta_curr^2) / (sigma_beta^2)
+          lp_new <- -0.5 * (beta_prop^2) / (sigma_beta^2)
+          
+          # MH acceptance
+          log_accept <- (ll_prop_full + lp_new) - (ll_current_full + lp_old)
+          
+          if (is.finite(log_accept) && log(runif(1)) < log_accept) {
+            Beta <- Beta_prop
+            Beta_free[j, k] <- beta_prop
+            pi_ik <- pi_prop
+            ll_current_full <- ll_prop_full
+            acc_count_beta[j, k] <- acc_count_beta[j, k] + 1
+          }
+        }
       }
+      
+      # Identifiability constraint
+      Beta[, K] <- 0
+      
+      
+      # # --- Step 3b: update Gamma indicators (Gibbs) ---
+      # # use exact posterior p(gamma=1 | beta) \propto pi_gamma * N(beta | 0, sigma_beta^2)
+      # beta_cur <- Beta[, free_idx_cols]  # q x (K-1)
+      # for (j in 1:q) {
+      #   for (k in 1:(K-1)) {
+      #     bval <- beta_cur[j, k]
+      #     # log-prob (unnormalized) for gamma = 1 and gamma = 0
+      #     log_p1 <- log(pi_gamma + 1e-300) - 0.5 * (bval^2) / (sigma_beta^2) - 0.5 * log(2 * pi * sigma_beta^2)
+      #     log_p0 <- log(1 - pi_gamma + 1e-300) - 0.5 * (bval^2) / (tau0^2) - 0.5 * log(2 * pi * tau0^2)
+      #     # numeric stable conversion to probability
+      #     maxlog <- max(log_p1, log_p0)
+      #     p1 <- exp(log_p1 - maxlog)
+      #     p0 <- exp(log_p0 - maxlog)
+      #     prob1 <- p1 / (p1 + p0)
+      #     Gamma[j, k] <- rbinom(1, 1, prob1)
+      #   }
+      # }
 
       # --- Step 4: update Sigma_k using current assignments z ---
       for (k in 1:K) {
@@ -258,9 +315,9 @@ moewishartX <- function(S_list,
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
         cat(sprintf(
-          "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=%.3f\n",
+          "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=[%.3f %.3f]\n",
           iter, logliks[iter], min(acc_count_nu / iter), max(acc_count_nu / iter),
-          acc_count_beta / iter
+          min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }
     }
