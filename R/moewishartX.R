@@ -161,59 +161,30 @@ moewishartX <- function(S_list,
         prob <- prob / sum(prob)
         z[i] <- sample.int(K, 1, prob = prob)
       }
-
-      # --- Step 3: EXACT spike-and-slab coordinate-wise MH update for Beta ---
-      mh_sd_mat <- matrix(mh_beta[1], nrow = q, ncol = K-1)
-      # Current free Beta matrix (q x (K-1))
-      Beta_free <- Beta[, free_idx_cols]
       
-      # Precompute current label-log-likelihood (based on current pi_ik)
-      ll_current_full <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
-      
-      # === Coordinate-wise MH ===
-      for (j in 1:q) {
-        for (k in 1:(K-1)) {
-          
-          # # -----------------------------
-          # # CASE 1: Gamma = 0 → exact spike at zero
-          # # -----------------------------
-          # if (Gamma[j, k] == 0) {
-          #   Beta[j, k] <- 0
-          #   Beta_free[j, k] <- 0
-          #   next     # skip MH completely
-          # }
-          
-          # -----------------------------
-          # CASE 2: Gamma = 1 → slab → MH update
-          # -----------------------------
-          beta_curr <- Beta_free[j, k]
-          beta_prop <- rnorm(1, mean = beta_curr, sd = mh_sd_mat[j, k])
-          
-          # generate proposal Beta
-          Beta_prop <- Beta
-          Beta_prop[j, k] <- beta_prop
-          
-          # compute proposed pi
-          pi_prop <- compute_pi_ik(X, Beta_prop)
-          
-          # compute likelihood
-          ll_prop_full <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
-          
-          # slab prior Normal(0, sigma_beta^2)
-          lp_old <- -0.5 * (beta_curr^2) / (sigma_beta^2)
-          lp_new <- -0.5 * (beta_prop^2) / (sigma_beta^2)
-          
-          # MH acceptance
-          log_accept <- (ll_prop_full + lp_new) - (ll_current_full + lp_old)
-          
-          if (is.finite(log_accept) && log(runif(1)) < log_accept) {
-            Beta <- Beta_prop
-            Beta_free[j, k] <- beta_prop
-            pi_ik <- pi_prop
-            ll_current_full <- ll_prop_full
-            acc_count_beta[j, k] <- acc_count_beta[j, k] + 1
-          }
-        }
+      # --- Step 3: update gating coefficients Beta via MH ---
+      # We'll update the (K-1) free columns jointly (size q*(K-1)).
+      # Flatten current free parameters
+      free_idx_cols <- 1:(K - 1)
+      Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
+      prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta)
+      Beta_prop <- Beta
+      Beta_prop[, free_idx_cols] <- matrix(prop, nrow = q, ncol = K - 1)
+      Beta_prop[, K] <- 0
+      # compute new pi_ik (n x K)
+      pi_prop <- compute_pi_ik(X, Beta_prop)
+      # log prior for Beta (Gaussian iid)
+      lp_prior_old <- -0.5 * sum(Beta_free^2) / (sigma_beta^2)
+      lp_prior_new <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
+      # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
+      ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
+      ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
+      log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
+      if (log(runif(1)) < log_accept) {
+        Beta <- Beta_prop
+        pi_ik <- pi_prop
+        # optionally track acceptance
+        acc_count_beta <- acc_count_beta + 1
       }
       
       # Identifiability constraint
@@ -273,7 +244,7 @@ moewishartX <- function(S_list,
               sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
               calc_ll_nu <- function(val_nu) {
                 term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
-                term2 <- -0.5 * sum_tr_val
+                term2 <- -0.5 * length(idx) * sum_tr_val
                 term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
                 term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
                 term1 + term2 + term3 + term4

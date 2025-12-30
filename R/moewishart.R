@@ -273,7 +273,7 @@ moewishart <- function(S_list,
                 # Define a mini function for log-lik given Sufficient Stats
                 calc_ll_nu <- function(val_nu) {
                   term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
-                  term2 <- -0.5 * sum_tr_val
+                  term2 <- -0.5 * length(idx) * sum_tr_val
                   term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
                   term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
                   term1 + term2 + term3 + term4
