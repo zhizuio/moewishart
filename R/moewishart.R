@@ -554,7 +554,8 @@ moewishart.em <- function(S_list, K,
         # Target: log(nu/2) + psi(nu/2 + ...) terms vs Data Stats
 
         T1k <- sum(tau[, k] * logdetS)
-        logdetSig <- as.numeric(determinant(Sigma_k[[k]], logarithm = TRUE)$modulus)
+        logdetSig <- as.numeric(determinant(Sigma_k[[k]] + diag(p) * 1e-12, 
+                                            logarithm = TRUE)$modulus)
 
         lhs <- (T1k / N_k[k]) - logdetSig - p * log(2)
 
