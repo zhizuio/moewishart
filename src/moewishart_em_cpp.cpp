@@ -199,8 +199,14 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
 
             // compute logdet Sigma_k
             arma::mat L;
-            // bool chol_ok = arma::chol(L, Sigma[k] + 1e-12 * arma::eye<arma::mat>(p,p));
-            double logdetSigma = 2.0 * arma::sum(arma::log(L.diag()));
+            bool chol_ok = arma::chol(L, Sigma[k] + 1e-12 * arma::eye<arma::mat>(p,p));
+            double logdetSigma;// = 2.0 * arma::sum(arma::log(L.diag()));
+            if (chol_ok) {
+                logdetSigma = 2.0 * arma::sum(arma::log(L.diag()));
+            } else {
+                double sign;
+                logdetSigma = arma::log_det(Sigma[k] + 1e-12 * arma::eye<arma::mat>(p,p), sign);
+            }
 
             // Now solve for a = nu/2 via Newton-Raphson on:
             // multivariate_digamma(p, a) = mean_logdetS - logdetSigma - p*log 2
