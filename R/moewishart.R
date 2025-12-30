@@ -534,7 +534,7 @@ moewishart.em <- function(S_list, K,
         N_k[bk] <- 1 # Soft reset
       }
     }
-
+    
     for (k in seq_len(K)) {
       # Weighted sum of S_i
       # Using Reduce is okay, but loop accumulation is often clearer/faster in R for lists
@@ -544,9 +544,12 @@ moewishart.em <- function(S_list, K,
           Ssum <- Ssum + tau[i, k] * S_list[[i]]
         }
       }
-
+      
       # 3a. Update Sigma (conditional on current nu)
       Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
+    }
+
+    for (k in seq_len(K)) {
 
       # 3b. Update Nu (if requested)
       if (estimate_nu) {
@@ -591,7 +594,7 @@ moewishart.em <- function(S_list, K,
         nu_k[k] <- curr_nu
 
         # 3c. Consistency update: Re-calc Sigma with new nu
-        Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
+        #Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
       }
     }
   }
