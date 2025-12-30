@@ -204,8 +204,9 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
             if (chol_ok) {
                 logdetSigma = 2.0 * arma::sum(arma::log(L.diag()));
             } else {
+                // based on LU decomposition
                 double sign;
-                logdetSigma = arma::log_det(Sigma[k] + 1e-12 * arma::eye<arma::mat>(p,p), sign);
+                arma::log_det(logdetSigma, sign, Sigma[k] + 1e-12 * arma::eye<arma::mat>(p,p));
             }
 
             // Now solve for a = nu/2 via Newton-Raphson on:
