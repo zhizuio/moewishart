@@ -388,7 +388,9 @@ moewishart.em <- function(S_list, K,
   p <- ncol(S_list[[1]])
 
   # Pre-compute log|S_i| as it is constant throughout EM
-  logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
+  logdetS <- sapply(S_list, function(S) {
+    as.numeric(determinant(S + diag(p) * 1e-12, logarithm = TRUE)$modulus)
+  })
 
   # --- 1. Initialization (CORRECTED) ---
 
