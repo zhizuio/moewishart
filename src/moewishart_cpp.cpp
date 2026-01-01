@@ -286,7 +286,7 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
                         auto calc_ll_nu = [&](double val_nu)
                         {
                             double term1 = (val_nu - p - 1.0) / 2.0 * sum_log_det_S_k;
-                            double term2 = -0.5 * ((double)idx.n_elem) * sum_tr_val;
+                            double term2 = -0.5 * sum_tr_val;
                             double term3 = -((double)idx.n_elem) * ((val_nu * p / 2.0) * std::log(2.0) + (val_nu / 2.0) * log_det_Sig);
                             double term4 = -((double)idx.n_elem) * log_multivariate_gamma(val_nu / 2.0, p);
                             return term1 + term2 + term3 + term4;
