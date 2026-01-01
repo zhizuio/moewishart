@@ -300,6 +300,7 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
                     double lp_new = (nu_prior_a - 1.0) * std::log(prop_nu) - nu_prior_b * prop_nu ; // Jacobian
 
                     double accept_logprob = (ll_new + lp_new) - (ll_old + lp_old);
+                    accept_logprob += std::log(prop_nu) - std::log(curr_nu); // add proposal ratio
                     if (std::log(R::runif(0.0, 1.0)) < accept_logprob) nu_k[k] = prop_nu;
                 }
             }

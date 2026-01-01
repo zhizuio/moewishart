@@ -290,7 +290,8 @@ moewishart <- function(S_list,
               lp_old <- (nu_prior_a - 1) * log(curr_nu) - nu_prior_b * curr_nu + log(curr_nu)
               lp_new <- (nu_prior_a - 1) * log(prop_nu) - nu_prior_b * prop_nu + log(prop_nu)
               
-              if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
+              accept_logprob = (ll_new + lp_new) - (ll_old + lp_old) + log(prop_nu) - log(curr_nu); #add proposal ratio
+              if (log(runif(1)) < accept_logprob) {
                 nu_k[k] <- prop_nu
                 acc_count[k] <- acc_count[k] + 1
               }
