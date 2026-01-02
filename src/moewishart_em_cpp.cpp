@@ -283,6 +283,10 @@ Rcpp::List moewishart_em_cpp(Rcpp::List S_list,
                 nu[k] = new_nu;
             }
         } // end components loop
+
+        // Renormalize pi so it sums to 1
+        pi /= arma::sum(pi);
+        
     } // end EM loop
 
     // prepare output
