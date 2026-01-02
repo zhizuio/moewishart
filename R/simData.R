@@ -82,9 +82,14 @@ simData <- function(n = 200, p = 2,
       }
     }
   } else {
-    if (NROW(Sigma) != p || NCOL(Sigma) != p) {
+    if (NROW(Sigma[[1]]) != p || NCOL(Sigma[[1]]) != p) {
       stop("The given 'Sigma' matrix has incorrect dimension!")
     }
+    
+    if (any(nus < p)) {
+      stop("The given 'nus' has too small degrees of freedom!")
+    }
+    Sigma_list <- Sigma
   }
 
   S_list <- vector("list", n)
