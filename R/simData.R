@@ -11,6 +11,7 @@
 #' @param p dimension of the Wishart distribution
 #' @param K number of latent components
 #' @param Xq number of covariates for modeling subpopulation probabilities
+#' @param betas coefficient matrix
 #' @param pis vector of probabilities of subpopulations
 #' @param nus vector of degrees of freedom of Wishart distributions
 #' @param Sigma list of scale matrices of the Wishart distribution
@@ -34,6 +35,7 @@
 #' @export
 simData <- function(n = 200, p = 2,
                     Xq = 0, K = NA,
+                    betas = NULL,
                     pis = c(0.4, 0.6),
                     nus = c(8, 12),
                     Sigma = NULL) {
@@ -49,14 +51,27 @@ simData <- function(n = 200, p = 2,
   if (length(nus) != K) {
     stop("Arguments 'pis' and 'nus' must have the same length!")
   }
-
-  # simulate covarites
-  X <- NULL
-  betas <- NULL
-  if (Xq > 0) {
-    pis <- matrix(NA, nrow = n, ncol = K)
+  
+  # check betas matrix for MoE model
+  if (Xq > 0 && (!is.null(betas))) {
+    if (!is.matrix(betas)) {
+      stop("Argument 'betas' must be a matrix!")
+    }
+    dims <- dim(betas)
+    if (dims[1] != Xq || dims[2] != Xq) {
+      stop("Argument 'betas' has wrong dimensions!")
+    }
+  } 
+  
+  if (Xq > 0 && is.null(betas)) {
     betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
     betas[, K] <- 0
+  } 
+  
+  # simulate covarites
+  X <- NULL
+  if (Xq > 0) {
+    pis <- matrix(NA, nrow = n, ncol = K)
     X <- matrix(rnorm(n * Xq), nrow = n, ncol = Xq)
     expXb <- exp(X %*% betas)
     sumExpXb <- rowSums(expXb)

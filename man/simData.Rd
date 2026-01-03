@@ -9,6 +9,7 @@ simData(
   p = 2,
   Xq = 0,
   K = NA,
+  betas = NULL,
   pis = c(0.4, 0.6),
   nus = c(8, 12),
   Sigma = NULL
@@ -22,6 +23,8 @@ simData(
 \item{Xq}{number of covariates for modeling subpopulation probabilities}
 
 \item{K}{number of latent components}
+
+\item{betas}{coefficient matrix}
 
 \item{pis}{vector of probabilities of subpopulations}
 
