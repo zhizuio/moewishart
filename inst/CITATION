@@ -1,5 +1,5 @@
 bibentry("Manual",
-  title = "{{moewishart: Bayesian Multivariate Probit Models in High Dimensions}}",
+  title = "{{moewishart: mixture and mixture-of-expert models for covariance data}}",
   author = c(person(given = "Zhi",
                           family = "Zhao",
                           email = "zhi.zhao@medisin.uio.no"),
