@@ -276,7 +276,7 @@ moewishart <- function(S_list,
                   # term2 <- -0.5 * sum_tr_val ## this term is indep. of nu_k
                   term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
                   term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
-                  term1 + term2 + term3 + term4
+                  term1 + term3 + term4
                 }
                 
                 ll_old <- calc_ll_nu(curr_nu)
