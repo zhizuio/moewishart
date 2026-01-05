@@ -239,12 +239,12 @@ moewishartX <- function(S_list,
               Sig <- Sigma_k[, , k]
               chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-8, p)))
               log_det_Sig <- 2 * sum(log(diag(chol_Sig)))
-              Sig_inv <- chol2inv(chol_Sig)
-              S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
-              sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
+              # Sig_inv <- chol2inv(chol_Sig)
+              # S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
+              # sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
               calc_ll_nu <- function(val_nu) {
                 term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
-                term2 <- -0.5 * sum_tr_val
+                # term2 <- -0.5 * sum_tr_val ## this term is indep. of nu_k
                 term3 <- -length(idx) * ((val_nu * p / 2) * log(2) + (val_nu / 2) * log_det_Sig)
                 term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
                 term1 + term2 + term3 + term4
