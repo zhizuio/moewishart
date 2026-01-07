@@ -114,7 +114,8 @@ moewishartX <- function(S_list,
     pi_ik <- compute_pi_ik(X, Beta) # n x K
 
     # Storage
-    nsave <- floor((niter - burnin) / thin)
+    ##nsave <- floor((niter - burnin) / thin)
+    nsave <- floor(niter / thin)
     if (nsave < 1) nsave <- 1
     out_beta <- array(NA, dim = c(nsave, q, K)) # store Beta at saves
     out_nu <- matrix(NA, nrow = nsave, ncol = K)

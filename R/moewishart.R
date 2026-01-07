@@ -136,7 +136,8 @@ moewishart <- function(S_list,
       }
       
       # Storage
-      nsave <- floor((niter - burnin) / thin)
+      ##nsave <- floor((niter - burnin) / thin)
+      nsave <- floor(niter / thin)
       if (nsave < 1) nsave <- 1
       out_pi <- matrix(NA, nrow = nsave, ncol = K)
       out_nu <- matrix(NA, nrow = nsave, ncol = K)
