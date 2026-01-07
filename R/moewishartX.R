@@ -123,6 +123,7 @@ moewishartX <- function(S_list,
     out_z <- matrix(NA, nrow = nsave, ncol = n)
     out_pi_mean <- array(0, dim = c(n, K)) # accumulate posterior mean of pi_ik
     logliks <- numeric(niter)
+    logliks_individual <- matrix(NA, nrow = niter, ncol = n)
     iter_save <- 0
 
     # pre-alloc
@@ -270,6 +271,7 @@ moewishartX <- function(S_list,
       max_l <- apply(logpost, 1, max)
       row_sums <- exp(logpost - max_l)
       logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
+      logliks_individual[iter, ] <- logliks[iter]
 
       # --- Save samples after burnin and thinning ---
       ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {

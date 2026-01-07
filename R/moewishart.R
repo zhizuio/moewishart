@@ -144,6 +144,7 @@ moewishart <- function(S_list,
       out_Sigma <- vector("list", nsave)
       out_z <- matrix(NA, nrow = nsave, ncol = n)
       logliks <- numeric(niter)
+      logliks_individual <- matrix(NA, nrow = niter, ncol = n)
       iter_save <- 0
       
       # Pre-allocate reusable vectors
@@ -312,6 +313,7 @@ moewishart <- function(S_list,
         max_l <- apply(logpost, 1, max)
         row_sums <- exp(logpost - max_l)
         logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
+        logliks_individual[iter, ] <- logliks[iter]
         
         # --- Save ---
         ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
