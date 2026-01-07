@@ -141,7 +141,8 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
         }
     }
 
-    int nsave = std::max(1, (niter - burnin) / thin);
+    // int nsave = std::max(1, (niter - burnin) / thin);
+    int nsave = std::max(1, niter / thin);
     arma::mat out_pi(nsave, K);
     arma::mat out_nu(nsave, K);
     Rcpp::List out_Sigma(nsave);
