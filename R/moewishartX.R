@@ -78,7 +78,13 @@ moewishartX <- function(S_list,
     p <- nrow(S_list[[1]])
     q <- ncol(X)
     if (n != nrow(X)) stop("Number of rows in X must equal length(S_list).")
-
+    
+    if (length(mh_sigma) != K && length(mh_sigma) != 1) {
+      stop("Argument 'mh_sigma' must have length 1 or K!")
+    } else if(length(mh_sigma) == 1) {
+      mh_sigma <- rep(mh_sigma, K)
+    }
+    
     # Priors / defaults
     if (is.null(nu0)) nu0 <- p + 2
     if (is.null(Psi0)) Psi0 <- diag(p)
@@ -232,7 +238,7 @@ moewishartX <- function(S_list,
       if (estimate_nu) {
         for (k in 1:K) {
           curr_nu <- nu_k[k]
-          prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+          prop_log <- rnorm(1, log(curr_nu), mh_sigma[k])
           prop_nu <- exp(prop_log)
           if (prop_nu > p - 1 + 1e-8) {
             idx <- which(z == k)

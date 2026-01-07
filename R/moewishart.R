@@ -83,6 +83,12 @@ moewishart <- function(S_list,
       n <- length(S_list)
       p <- nrow(S_list[[1]])
       
+      if (length(mh_sigma) != K && length(mh_sigma) != 1) {
+        stop("Argument 'mh_sigma' must have length 1 or K!")
+      } else if(length(mh_sigma) == 1) {
+        mh_sigma <- rep(mh_sigma, K)
+      }
+      
       if (!is.null(alpha)) {
         if (length(alpha) != K) {
           warning("Length of alpha (", length(alpha), ") != K (", K, "). Recycling/triming alpha to length K.")
@@ -245,7 +251,7 @@ moewishart <- function(S_list,
         if (estimate_nu) {
           for (k in 1:K) {
             curr_nu <- nu_k[k]
-            prop_log <- rnorm(1, log(curr_nu), mh_sigma)
+            prop_log <- rnorm(1, log(curr_nu), mh_sigma[k])
             # prop_log <- log(curr_nu) + rnorm(1, 0, mh_sigma) # random-walk MH
             prop_nu <- exp(prop_log)
             
