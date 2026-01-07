@@ -271,7 +271,8 @@ moewishartX <- function(S_list,
       logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
 
       # --- Save samples after burnin and thinning ---
-      if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+      ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+      if (iter %% thin == 0) {
         iter_save <- iter_save + 1
         if (iter_save <= nsave) {
           out_beta[iter_save, , ] <- Beta

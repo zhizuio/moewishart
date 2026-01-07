@@ -313,7 +313,8 @@ moewishart <- function(S_list,
         logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
         
         # --- Save ---
-        if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+        ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+        if (iter %% thin == 0) {
           iter_save <- iter_save + 1
           if (iter_save <= nsave) {
             out_pi[iter_save, ] <- pi_k
