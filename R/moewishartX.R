@@ -307,7 +307,8 @@ moewishartX <- function(S_list,
       Sigma_samples = out_Sigma,
       z_samples = out_z,
       pi_mean = out_pi_mean,
-      loglik = logliks
+      loglik = logliks,
+      loglik_individual = logliks_individual
     )
   }
 

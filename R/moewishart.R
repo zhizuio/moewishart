@@ -342,7 +342,8 @@ moewishart <- function(S_list,
       
       ret <- list(
         pi = out_pi, nu = out_nu, Sigma = out_Sigma, z = out_z,
-        sigma_posterior_mean = sigma_posterior_mean, loglik = logliks
+        sigma_posterior_mean = sigma_posterior_mean, loglik = logliks,
+        loglik_individual = logliks_individual
       )
     }
     
