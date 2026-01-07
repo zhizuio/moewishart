@@ -313,7 +313,8 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
         logliks[iter] = arma::accu(max_l + arma::log(row_sums));
 
         // Save
-        if (iter >= burnin && ((iter - burnin) % thin == 0))
+        // if (iter >= burnin && ((iter - burnin) % thin == 0))
+        if (iter % thin == 0)
         {
             if (iter_save < nsave)
             {
