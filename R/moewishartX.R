@@ -271,7 +271,7 @@ moewishartX <- function(S_list,
       max_l <- apply(logpost, 1, max)
       row_sums <- exp(logpost - max_l)
       logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
-      logliks_individual[iter, ] <- logliks[iter]
+      logliks_individual[iter, ] <- max_l + log(rowSums(row_sums))
 
       # --- Save samples after burnin and thinning ---
       ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
