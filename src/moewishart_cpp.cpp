@@ -147,6 +147,7 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
     Rcpp::List out_Sigma(nsave);
     arma::imat out_z(nsave, n);
     arma::vec logliks(niter);
+    arma::mat logliks_individual(niter, n);
     int iter_save = 0;
 
     arma::mat logpost(n, K);
@@ -311,6 +312,7 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
         arma::mat row_exps = arma::exp(logpost.each_col() - max_l);
         arma::vec row_sums = arma::sum(row_exps, 1);
         logliks[iter] = arma::accu(max_l + arma::log(row_sums));
+        logliks_individual.row(iter) = max_l.t() + arma::log(row_sums.t());
 
         // Save
         // if (iter >= burnin && ((iter - burnin) % thin == 0))
@@ -386,6 +388,7 @@ Rcpp::List moewishart_cpp(Rcpp::List S_list,
                Rcpp::Named("Sigma") = out_Sigma,
                Rcpp::Named("z") = out_z,
                Rcpp::Named("sigma_posterior_mean") = Sigma_mean_list,
-               Rcpp::Named("loglik") = logliks
+               Rcpp::Named("loglik") = logliks,
+               Rcpp::Named("loglik_individual") = logliks_individual
            );
 }
