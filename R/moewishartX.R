@@ -358,16 +358,6 @@ moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE
   q <- ncol(X)
 
   # --- CORRECTION 1: BREAK SYMMETRY IN INITIALIZATION ---
-  if (is.null(init)) {
-    # Initialize with random noise so clusters can diverge
-    gamma <- matrix(runif(n * K), n, K)
-    gamma <- gamma / rowSums(gamma)
-
-    if (is.null(init_nu)) init_nu <- rep(p + 5, K)
-  } else {
-    gamma <- init$gamma
-    if (is.null(init_nu) && !is.null(init$nu)) init_nu <- init$nu
-  }
 
   pars <- list()
   if (is.null(init) || is.null(init$beta)) {
