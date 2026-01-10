@@ -1,6 +1,6 @@
 ##========================================================================================
 ## This file contains code for 100 simulations
-## Simulated data: Generated from "Mixture Model & n=500 & p=2"
+## Simulated data: Generated from "Mixture Model & n=500 & p=8"
 ## Working models: Bayes, EM, Bayes-MoE, EM-MoE
 ## 
 ## Output 1: Each simulation fitted by the 4 methods -> one saved file 
@@ -27,8 +27,8 @@ for (seed.idx in 1:n_sim) {
   set.seed(seed.idx)
   dat <- simData(n, p,
                  pis = c(0.35, 0.40, 0.25),
-                 nus = c(8, 12, 3),
-                 Sigma = NULL # default Sigmas pre-defined in function 'simData()'
+                 nus = c(9, 20, 14),
+                 Sigma = list(  make_pd_AR(p,rho=0.5), make_pd_AR(p,rho=0.2), make_pd_AR(p,rho=.8) )
   )
   S_list <- dat$S
   Sigma_list <- dat$Sigma_list
@@ -40,8 +40,8 @@ for (seed.idx in 1:n_sim) {
   fitBayes <- moewishart(S_list,
                          K = my_K_intial, #init_pi = init_pi, 
                          nu_prior_a = 4, nu_prior_b = 0.5,
-                         mh_sigma = 0.1, #cpp = TRUE,
-                         niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+                         mh_sigma = 0.04, #cpp = TRUE,
+                         niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
   
   # run mixture model with EM algorithm
@@ -58,8 +58,8 @@ for (seed.idx in 1:n_sim) {
     S_list, X = matrix(rep(1, n), ncol = 1),
     K = my_K_intial, #init_pi = init_pi, 
     nu_prior_a = 4, nu_prior_b = 0.5,
-    mh_sigma = 0.1, mh_beta = 0.2,
-    niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
+    mh_sigma = 0.04, mh_beta = 0.25,
+    niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
   
   # run MoE model with EM algorithm
@@ -81,7 +81,7 @@ for (seed.idx in 1:n_sim) {
 ## summarize results
 ########################
 
-burnin <- 1000
+burnin <- 5000
 
 # true parameters
 pi.true <- dat$pi[1, ]

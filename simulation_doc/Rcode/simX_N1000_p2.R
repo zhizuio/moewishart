@@ -1,6 +1,6 @@
 ##========================================================================================
 ## This file contains code for 100 simulations
-## Simulated data: Generated from "Mixture Model & n=1000 & p=2"
+## Simulated data: Generated from "MoE Model & n=1000 & p=2"
 ## Working models: Bayes, EM, Bayes-MoE, EM-MoE
 ## 
 ## Output 1: Each simulation fitted by the 4 methods -> one saved file 
@@ -19,13 +19,19 @@ p <- 2 # covariance dimension
 K <- 3 # number of mixture components
 n_sim <- 100 # number of simulations
 
+set.seed(123) # fix coefficients of underlying MoE model
+Xq <- 3; K = 3
+betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
+betas[, K] <- 0
+
 library(moewishart)
 
 for (seed.idx in 1:n_sim) {
   
-  # simulate data from the underlying true model: "mixture of covariance matrix model"
+  # simulate data from the underlying true model: "MoE model"
   set.seed(seed.idx)
   dat <- simData(n, p,
+                 Xq = 3, K = 3, betas = betas,
                  pis = c(0.35, 0.40, 0.25),
                  nus = c(8, 12, 3),
                  Sigma = NULL # default Sigmas pre-defined in function 'simData()'
@@ -39,8 +45,8 @@ for (seed.idx in 1:n_sim) {
   set.seed(123)
   fitBayes <- moewishart(S_list,
                          K = my_K_intial, #init_pi = init_pi, 
-                         nu_prior_a = 4, nu_prior_b = 0.5,
-                         mh_sigma = 0.08, #cpp = TRUE,
+                         nu_prior_a = 2, nu_prior_b = 0.5,
+                         mh_sigma = 0.08,
                          niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
   )
   
@@ -52,20 +58,21 @@ for (seed.idx in 1:n_sim) {
                       niter = 10000, verbose = TRUE
   )
   
+  
   # run Bayesian MoE model
   set.seed(123)
   MoEfitBayes <- moewishartX(
-    S_list, X = matrix(rep(1, n), ncol = 1),
+    S_list, X = cbind(1, dat$X),
     K = my_K_intial, #init_pi = init_pi, 
-    nu_prior_a = 4, nu_prior_b = 0.5,
-    mh_sigma = 0.08, mh_beta = 0.18,
+    nu_prior_a = 2, nu_prior_b = 0.5,
+    mh_sigma = 0.08, mh_beta = 0.09,
     niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
   )
   
   # run MoE model with EM algorithm
   set.seed(123)
   MoEfitEM <- moewishartX(
-    S_list, X = matrix(rep(1, n), ncol = 1),
+    S_list, X = cbind(1, dat$X),
     method = "em",
     K = my_K_intial, #init_pi = init_pi, 
     niter = 10000, verbose = TRUE
@@ -87,6 +94,7 @@ burnin <- 1000
 pi.true <- dat$pi[1, ]
 nu.true <- dat$nu
 Sigma.true <- dat$Sigma_list
+beta.true <- dat$betas
 
 # compute error of each estimate by methods 'Bayes' and 'EM'
 # please be sure that the following R code file "moewishartX_errors.R" is ready
@@ -94,7 +102,6 @@ source("moewishart_errors.R")
 
 # compute error of each estimate by methods 'Bayes-MoE' and 'EM-MoE'
 # please be sure that the following R code file "moewishartX_errors.R" is ready
-beta.true <- NULL # no true beta due to the underlying model is a mixture model
 source("moewishartX_errors.R")
 
 # save results as a data frame
@@ -131,6 +138,11 @@ datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes0.X", 
 datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes.X", estimator = "Sigma-KL", error = Sigma.error2[,9] ))
 datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "EM.X", estimator = "Sigma-KL", error = Sigma.error2[,9] ))
 
-save(datSimN1000, file = paste0(file_directory, "/datSim_N1000.RData"))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes0.X", estimator = "Beta-norm1", error = beta.error2[,1] ))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes0.X", estimator = "Beta-normF", error = beta.error2[,2] ))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes.X", estimator = "Beta-norm1", error = beta.error2[,3] ))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "Bayes.X", estimator = "Beta-normF", error = beta.error2[,4] ))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "EM.X", estimator = "Beta-norm1", error = beta.error2[,5] ))
+datSimN1000 <- rbind(datSimN1000, data.frame(n = "n=1000", method = "EM.X", estimator = "Beta-normF", error = beta.error2[,6] ))
 
-
+save(datSimN1000, file = paste0(file_directory, "/datSimX_N1000.RData"))

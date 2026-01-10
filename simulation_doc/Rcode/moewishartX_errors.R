@@ -1,5 +1,6 @@
-
-# burnin = 
+##==========================================================
+## This chunck of code is inserted in file 'sim_Figure1A.R'
+##==========================================================
 
 pi.error2 <- matrix(0, nrow = n_sim, ncol = 6)
 nu.error2 <- matrix(0, nrow = n_sim, ncol = 6)
