@@ -296,8 +296,8 @@ moewishartX <- function(S_list,
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
         cat(sprintf(
-          "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f] | acc_rate_beta=[%.3f %.3f]\n",
-          iter, logliks[iter], min(acc_count_nu / iter), max(acc_count_nu / iter),
+          "Iter %4d | LL=%.1f | acc_rate_nu=%.3f | acc_rate_beta=[%.3f %.3f]\n",
+          iter, logliks[iter], acc_count_nu / iter, #min(acc_count_nu / iter), max(acc_count_nu / iter),
           min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }

@@ -338,8 +338,8 @@ moewishart <- function(S_list,
           # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
           # rate <- iter / elapsed
           cat(sprintf(
-            "Iter %4d | LL=%.1f | acc_rate_nu=[%.3f %.3f]\n",
-            iter, logliks[iter], min(acc_count / iter), max(acc_count / iter)
+            "Iter %4d | LL=%.1f | acc_rate_nu=%.3f\n",
+            iter, logliks[iter], acc_count / iter #min(acc_count / iter), max(acc_count / iter)
           ))
         }
       }
