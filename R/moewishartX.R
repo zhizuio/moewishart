@@ -84,6 +84,11 @@ moewishartX <- function(S_list,
     } else if(length(mh_sigma) == 1) {
       mh_sigma <- rep(mh_sigma, K)
     }
+    if (length(mh_beta) != K-1 && length(mh_beta) != 1) {
+      stop("Argument 'mh_beta' must have length 1 or K-1!")
+    } else if(length(mh_beta) == 1) {
+      mh_beta <- rep(mh_beta, K-1)
+    }
     
     # Priors / defaults
     if (is.null(nu0)) nu0 <- p + 2
@@ -135,7 +140,7 @@ moewishartX <- function(S_list,
     # pre-alloc
     logpost <- matrix(0, n, K)
     acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
-    acc_count_beta <- matrix(0, q, K - 1) # record acceptance counts of MH for beta
+    acc_count_beta <- c(numeric(K - 1), NA) # record acceptance counts of MH for beta
     free_idx_cols <- 1:(K-1)
     
     # Spike-and-slab indicators for Beta (q x (K-1))
@@ -173,26 +178,31 @@ moewishartX <- function(S_list,
       # --- Step 3: update gating coefficients Beta via MH ---
       # We'll update the (K-1) free columns jointly (size q*(K-1)).
       # Flatten current free parameters
-      free_idx_cols <- 1:(K - 1)
-      Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
-      prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta)
-      Beta_prop <- Beta
-      Beta_prop[, free_idx_cols] <- matrix(prop, nrow = q, ncol = K - 1)
-      Beta_prop[, K] <- 0
-      # compute new pi_ik (n x K)
-      pi_prop <- compute_pi_ik(X, Beta_prop)
-      # log prior for Beta (Gaussian iid)
-      lp_prior_old <- -0.5 * sum(Beta_free^2) / (sigma_beta^2)
-      lp_prior_new <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
-      # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
-      ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
-      ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
-      log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
-      if (log(runif(1)) < log_accept) {
-        Beta <- Beta_prop
-        pi_ik <- pi_prop
-        # optionally track acceptance
-        acc_count_beta <- acc_count_beta + 1
+      
+      #free_idx_cols <- 1:(K - 1)
+      
+      # Update Beta columnwise
+      for (free_idx_cols in 1:(K - 1)) {
+        Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
+        prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta[free_idx_cols])
+        Beta_prop <- Beta
+        Beta_prop[, free_idx_cols] <- prop#matrix(prop, nrow = q, ncol = K - 1)
+        #Beta_prop[, K] <- 0
+        # compute new pi_ik (n x K)
+        pi_prop <- compute_pi_ik(X, Beta_prop)
+        # log prior for Beta (Gaussian iid)
+        lp_prior_old <- -0.5 * sum(Beta^2) / (sigma_beta^2)
+        lp_prior_new <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
+        # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
+        ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
+        ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
+        log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
+        if (log(runif(1)) < log_accept) {
+          Beta <- Beta_prop
+          pi_ik <- pi_prop
+          # optionally track acceptance
+          acc_count_beta[free_idx_cols] <- acc_count_beta[free_idx_cols] + 1
+        }
       }
       
       # Identifiability constraint
@@ -296,9 +306,9 @@ moewishartX <- function(S_list,
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
         cat(sprintf(
-          "Iter %4d | LL=%.1f | acc_rate_nu=%.3f | acc_rate_beta=[%.3f %.3f]\n",
+          "Iter %4d | LL=%.1f | acc_rate_nu=%.3f | acc_rate_beta=%.3f\n",
           iter, logliks[iter], acc_count_nu / iter, #min(acc_count_nu / iter), max(acc_count_nu / iter),
-          min(acc_count_beta / iter), max(acc_count_beta / iter)
+          acc_count_beta / iter #min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }
     }

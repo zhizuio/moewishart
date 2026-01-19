@@ -1,5 +1,10 @@
 <div style="text-align: left;">
 
+### moewishart 0.3 (2026-01-15) (GitHub Only)
+
+* Update beta_k component-wise for MoE model
+* TODO: remove all Rcpp source code
+
 ### moewishart 0.2 (2025-12-30) (GitHub Only)
 
 * Add EM algorithms (with looking for suitable initial values)
