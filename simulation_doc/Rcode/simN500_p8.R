@@ -33,41 +33,41 @@ for (seed.idx in 1:n_sim) {
   S_list <- dat$S
   Sigma_list <- dat$Sigma_list
   my_K_intial <- 3
-  init_pi <- c(0.33, 0.33, 0.34)
   
   # run Bayesian mixture model
   set.seed(123)
   fitBayes <- moewishart(S_list,
-                         K = my_K_intial, #init_pi = init_pi, 
-                         nu_prior_a = 4, nu_prior_b = 0.5,
-                         mh_sigma = 0.04, #cpp = TRUE,
-                         niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
+    K = my_K_intial,  
+    nu_prior_a = 4, nu_prior_b = 0.5,
+    mh_sigma = 0.04, #cpp = TRUE,
+    niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
-  
+
   # run mixture model with EM algorithm
   set.seed(123)
   fitEM <- moewishart(S_list,
-                      method = "em", cpp = TRUE,
-                      K = my_K_intial, #init_pi = init_pi, 
-                      niter = 10000, verbose = TRUE
+    method = "em", #cpp = TRUE,
+    K = my_K_intial,  
+    niter = 10000, verbose = TRUE,
+    n_restarts = 5, restart_iters = 40, tol = 1e-8
   )
-  
+
   # run Bayesian MoE model
   set.seed(123)
   MoEfitBayes <- moewishartX(
     S_list, X = matrix(rep(1, n), ncol = 1),
-    K = my_K_intial, #init_pi = init_pi, 
+    K = my_K_intial,  
     nu_prior_a = 4, nu_prior_b = 0.5,
     mh_sigma = 0.04, mh_beta = 0.25,
     niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
-  
+
   # run MoE model with EM algorithm
   set.seed(123)
   MoEfitEM <- moewishartX(
     S_list, X = matrix(rep(1, n), ncol = 1),
     method = "em",
-    K = my_K_intial, #init_pi = init_pi, 
+    K = my_K_intial,  
     niter = 10000, verbose = TRUE
   )
   

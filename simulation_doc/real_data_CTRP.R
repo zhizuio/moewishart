@@ -162,7 +162,7 @@ init_pi <- c(0.33, 0.33, 0.34)
 # run Bayesian mixture model
 set.seed(123)
 fitBayes <- moewishart(S_list,
-                       K = my_K_intial, #init_pi = init_pi, 
+                       K = my_K_intial,  
                        nu_prior_a = 4, nu_prior_b = 0.5,
                        mh_sigma = 0.07, #cpp = TRUE,
                        niter = 10000, burnin = 1000, thin = 1, verbose = TRUE
@@ -175,7 +175,7 @@ loo::loo(fit$loglik_individual[((1 + burnin):nIter) / thin, ])
 # run mixture model with EM algorithm
 set.seed(123)
 fitEM <- moewishart(S_list,
-                    method = "em", cpp = TRUE,
+                    method = "em",
                     K = my_K_intial, init_pi = init_pi, 
                     niter = 10000, verbose = TRUE
 )
@@ -184,7 +184,7 @@ fitEM <- moewishart(S_list,
 set.seed(123)
 MoEfitBayes <- moewishartX(
   S_list, X = matrix(rep(1, n), ncol = 1),
-  K = my_K_intial, #init_pi = init_pi, 
+  K = my_K_intial,  
   nu_prior_a = 4, nu_prior_b = 0.5,
   mh_sigma = 0.07, mh_beta = 0.4,
   niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
@@ -195,7 +195,7 @@ set.seed(123)
 MoEfitEM <- moewishartX(
   S_list, X = matrix(rep(1, n), ncol = 1),
   method = "em",
-  K = my_K_intial, #init_pi = init_pi, 
+  K = my_K_intial,  
   niter = 10000, verbose = TRUE
 )
 
