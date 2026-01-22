@@ -1,21 +1,42 @@
-<!-- badges: 
-[![r-universe](https://ocbe-uio.r-universe.dev/badges/moewishart)](https://ocbe-uio.r-universe.dev/moewishart)
-[![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
--->
-[![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
+# Numerical studies
 
-# moewishart: Bayesian Mixture of Experts of Wishart Distributions
+This folder is for the results in the paper *MMixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening* by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
 
+# Data
+## Abstract
 
-## Installation
-
-Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart)
-
-```r
-#library("devtools")
-devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
+The main data contain simulated data and real data. 
+The real data is the Cancer Therapeutics Response Portal (CTRP v2, 2015) (Seashore-Ludlow et al., 2015) which is publicly available at 
+```diff
+https://ocg.cancer.gov/programs/ctd2/data-portal
 ```
 
-## Preliminary results
+## New R package
+We developed an R package `moewishart` which is available on the [GitHub](https://github.com/zhizuio/moewishart/) for implementing our methods. 
 
-See folder `simulation_doc/` for some simulation results.
+## Availability
+
+No restrictions.
+
+# Code for simulations
+## Abstract
+
+We are including all of the code that will enable reproducing our simulation results.
+
+# Instructions for Use
+## Reproducibility
+
+Tables 1-2 and Figures 1-2 can be reproduced through the provided code. The general steps are:
+
+1. Install and load our new R-package [moewishart](https://github.com/zhizuio/moewishart/).
+2. Load scripts `moewishart_errors.R` and `moewishartX_errors.R`.
+3. Run scripts `simN200_p2.R`, `simN500_p2.R` and `simN1000_p2.R`, which will save simulation results in a user-defined folder.
+4. Run script `sim_Figure1A.R` and produce Figure 1A. Similarly Figure 1B can be produced by running `simN200_p8.R`, `simN500_p8.R`, `simN1000_p8.R` and slightly modified `sim_Figure1A.R`.
+5. Run scripts `simX_N200_p2.R`, `simX_N500_p2.R` and `simX_N1000_p2.R`, which will save simulation results in a user-defined folder.
+6. Run script `sim_Figure2A.R` and produce Figure 2A. Similarly Figure 2B can be produced.
+
+
+# Code for real data analysis
+## Abstract
+
+We are ...
