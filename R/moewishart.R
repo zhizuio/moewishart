@@ -145,6 +145,7 @@ moewishart <- function(S_list,
       ##nsave <- floor((niter - burnin) / thin)
       nsave <- floor(niter / thin)
       if (nsave < 1) nsave <- 1
+      out_pi_ik <- array(NA, dim = c(nsave, n, K))
       out_pi <- matrix(NA, nrow = nsave, ncol = K)
       out_nu <- matrix(NA, nrow = nsave, ncol = K)
       out_Sigma <- vector("list", nsave)
@@ -205,11 +206,13 @@ moewishart <- function(S_list,
         # Vectorized sampling is hard in base R, looping sample.int is okay
         # but we can optimize the probability normalization
         # Using pure R loop for sampling is usually fast enough compared to the math above
+        pi_ik <- matrix(NA, nrow = n, ncol = K)
         for (i in 1:n) {
           lp <- logpost[i, ]
           lp <- lp - max(lp)
           prob <- exp(lp)
           z[i] <- sample.int(K, 1, prob = prob)
+          pi_ik[i, ] <- prob
         }
         
         # --- Step 2: Update Weights pi ---
@@ -326,6 +329,7 @@ moewishart <- function(S_list,
         if (iter %% thin == 0) {
           iter_save <- iter_save + 1
           if (iter_save <= nsave) {
+            out_pi_ik[iter_save, , ] <- pi_ik
             out_pi[iter_save, ] <- pi_k
             out_nu[iter_save, ] <- nu_k
             out_Sigma[[iter_save]] <- Sigma_k
@@ -347,6 +351,7 @@ moewishart <- function(S_list,
       sigma_posterior_mean <- Reduce("+", out_Sigma) / length(out_Sigma)
       
       ret <- list(
+        pi_ik = out_pi_ik,
         pi = out_pi, nu = out_nu, Sigma = out_Sigma, z = out_z,
         sigma_posterior_mean = sigma_posterior_mean, loglik = logliks,
         loglik_individual = logliks_individual

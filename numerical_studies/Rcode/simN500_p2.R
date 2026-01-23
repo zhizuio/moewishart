@@ -40,7 +40,7 @@ for (seed.idx in 1:n_sim) {
     K = my_K_intial,  
     nu_prior_a = 4, nu_prior_b = 0.5,
     mh_sigma = 0.1, #cpp = TRUE,
-    niter = 50000, burnin = 10000, thin = 1, verbose = TRUE
+    niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
 
   # run mixture model with EM algorithm
@@ -59,7 +59,7 @@ for (seed.idx in 1:n_sim) {
     K = my_K_intial,  
     nu_prior_a = 4, nu_prior_b = 0.5,
     mh_sigma = 0.1, mh_beta = 0.2,
-    niter = 50000, burnin = 10000, thin = 1, verbose = TRUE
+    niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
   )
 
   # run MoE model with EM algorithm
