@@ -18,5 +18,5 @@ devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "ghp_9uL
 
 ## Preliminary results
 
-See folder `simulation_doc/` for some simulation results.
+See folder `numerical_studies/` for simulation and real data analysis with R code.
 
