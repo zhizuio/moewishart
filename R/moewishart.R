@@ -212,7 +212,7 @@ moewishart <- function(S_list,
           lp <- lp - max(lp)
           prob <- exp(lp)
           z[i] <- sample.int(K, 1, prob = prob)
-          pi_ik[i, ] <- prob
+          pi_ik[i, ] <- prob / sum(prob)
         }
         
         # --- Step 2: Update Weights pi ---
@@ -445,7 +445,7 @@ moewishart.em <- function(S_list, K,
         logdens <- matrix(NA, n, K)
         for (k in seq_len(K)) {
           for (i in seq_len(n)) {
-            if(is.null(curr_Sigma[[k]])) browser()
+            #if(is.null(curr_Sigma[[k]])) browser()
             logdens[i, k] <- dWishart(S_list[[i]], curr_nu[k], curr_Sigma[[k]], 
                                       logarithm = TRUE)
           }
@@ -505,7 +505,7 @@ moewishart.em <- function(S_list, K,
     for (k in seq_len(K)) {
       # Vectorize this loop if possible, but loop is okay for readability
       for (i in seq_len(n)) {
-        if(is.null(Sigma_k[[k]])) browser()
+        #if(is.null(Sigma_k[[k]])) browser()
         logdens[i, k] <- dWishart(S_list[[i]], nu_k[k], Sigma_k[[k]],
           logarithm = TRUE
         )

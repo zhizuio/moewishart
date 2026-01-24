@@ -132,6 +132,7 @@ moewishartX <- function(S_list,
     out_nu <- matrix(NA, nrow = nsave, ncol = K)
     out_Sigma <- vector("list", nsave)
     out_z <- matrix(NA, nrow = nsave, ncol = n)
+    out_pi_ik <- array(NA, dim = c(nsave, n, K))
     out_pi_mean <- array(0, dim = c(n, K)) # accumulate posterior mean of pi_ik
     logliks <- numeric(niter)
     logliks_individual <- matrix(NA, nrow = niter, ncol = n)
@@ -298,6 +299,7 @@ moewishartX <- function(S_list,
           out_nu[iter_save, ] <- nu_k
           out_Sigma[[iter_save]] <- Sigma_k
           out_z[iter_save, ] <- z
+          out_pi_ik[iter_save, , ] <- pi_ik
         }
         out_pi_mean <- out_pi_mean + pi_ik
       }
@@ -322,6 +324,7 @@ moewishartX <- function(S_list,
       nu_samples = out_nu,
       Sigma_samples = out_Sigma,
       z_samples = out_z,
+      pi_ik = out_pi_ik,
       pi_mean = out_pi_mean,
       loglik = logliks,
       loglik_individual = logliks_individual
