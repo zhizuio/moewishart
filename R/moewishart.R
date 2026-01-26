@@ -604,7 +604,7 @@ moewishart.em <- function(S_list, K,
 
           # Constraints
           if (curr_nu <= p) curr_nu <- p + 0.1
-          if (curr_nu > 1e5) curr_nu <- 1e5
+          if (curr_nu > 1e3) curr_nu <- 1e3
           if (abs(step) < 1e-4) break
         }
         nu_k[k] <- curr_nu
