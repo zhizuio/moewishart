@@ -613,6 +613,7 @@ moewishart.em <- function(S_list, K,
         #Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
       }
     }
+    if (any(nu_k > 1e3)) break
   }
 
   list(

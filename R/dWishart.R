@@ -38,7 +38,7 @@ dWishart <- function(S, nu, Sigma, detS_val = NULL, logarithm = TRUE) {
 
   # Calculate trace(Sigma^{-1} S) efficiently
   # solving Sigma x = S is better than explicit inverse
-  invSigma_S <- sum(diag(solve(Sigma, S)))
+  invSigma_S <- sum(diag(solve(Sigma + diag(1e-6, p), S)))
 
   term <- ((nu - p - 1) / 2) * detS_val - (nu / 2) * ldSigma - 0.5 * invSigma_S
   ret <- term - (nu * p / 2) * log(2) - lmvgamma(nu / 2, p)
