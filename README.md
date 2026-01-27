@@ -4,7 +4,7 @@
 -->
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 
-# moewishart: Mixture of Experts of Wishart model for covariance data.
+# moewishart: Mixture-of-Experts Wishart models for covariance data.
 
 
 ## Installation
