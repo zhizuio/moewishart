@@ -604,7 +604,7 @@ moewishart.em <- function(S_list, K,
 
           # Constraints
           if (curr_nu <= p) curr_nu <- p + 0.1
-          if (curr_nu > 1e3) break #curr_nu <- 1e3
+          if (curr_nu > 1e3) curr_nu <- 1e3
           if (abs(step) < 1e-4) break
         }
         nu_k[k] <- curr_nu
@@ -613,7 +613,7 @@ moewishart.em <- function(S_list, K,
         #Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
       }
     }
-    if (any(nu_k > 1e3)) break
+    # if (any(nu_k > 1e3)) break
   }
 
   list(
