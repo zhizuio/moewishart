@@ -1,6 +1,6 @@
 ##========================================================================================
 ## This file contains code for 100 simulations for model selection
-## Simulated data: Generated from "Mixture Model & n=200 & p=2"
+## Simulated data: Generated from "MoE Model & n=200 & p=2"
 ## Working models: Bayes, EM, Bayes-MoE, EM-MoE with K={2,3,4,5,6}
 ## 
 ## Output: AIC, BIC, ICL, elpd_loo
@@ -9,7 +9,7 @@
 rm(list = ls())
 
 # user-defined directory to save simulation results as data files
-file_directory <- "../moewishart/"
+file_directory <- "../moewishartX/"
 setwd(file_directory)
 
 # summarize information criteria
@@ -22,6 +22,11 @@ n <- 200 # subjects
 p <- 2 # covariance dimension
 q <- 0 # covariates 
 K <- 3 # number of mixture components
+set.seed(123) # fix coefficients of underlying MoE model
+q <- 3; K = 3
+betas <- matrix(runif(q * K, -2, 2), nrow = q, ncol = K)
+betas[, K] <- 0
+
 n_sim <- 100 # number of simulations
 
 library(moewishart)
@@ -35,9 +40,10 @@ for (my_K_intial in 2:6) {
     # simulate data from the underlying true model: "mixture of covariance matrix model"
     set.seed(seed.idx)
     dat <- simData(n, p,
-                  pis = c(0.35, 0.40, 0.25),
-                  nus = c(8, 12, 3),
-                  Sigma = NULL # default Sigmas pre-defined in function 'simData()'
+      Xq = 3, K = 3, betas = betas,
+      pis = c(0.35, 0.40, 0.25),
+      nus = c(8, 12, 3),
+      Sigma = NULL # default Sigmas pre-defined in function 'simData()'
     )
     S_list <- dat$S
     Sigma_list <- dat$Sigma_list
@@ -46,9 +52,9 @@ for (my_K_intial in 2:6) {
     set.seed(123)
     fitBayes <- moewishart(S_list,
       K = my_K_intial,  
-      nu_prior_a = 4, nu_prior_b = 0.5,
-      mh_sigma = 0.2, 
-      niter = niter, burnin = burnin, thin = 1, verbose = TRUE
+      nu_prior_a = 2, nu_prior_b = 0.5,
+      mh_sigma = 0.2,
+      niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
     )
     a <- loo::loo(fitBayes$loglik_individual[((1 + burnin):niter) / thin, ])
     fitBayes$elpd <- a$estimates["elpd_loo",]
@@ -65,11 +71,11 @@ for (my_K_intial in 2:6) {
     # run Bayesian MoE model
     set.seed(123)
     MoEfitBayes <- moewishartX(
-      S_list, X = matrix(rep(1, n), ncol = 1),
+      S_list, X = cbind(1, dat$X),
       K = my_K_intial,  
-      nu_prior_a = 4, nu_prior_b = 0.5,
-      mh_sigma = 0.2, mh_beta = 0.4,
-      niter = niter, burnin = burnin, thin = 1, verbose = TRUE
+      nu_prior_a = 2, nu_prior_b = 0.5,
+      mh_sigma = 0.2, mh_beta = 0.25,
+      niter = 20000, burnin = 5000, thin = 1, verbose = TRUE
     )
     a <- loo::loo(MoEfitBayes$loglik_individual[((1 + burnin):niter) / thin, ])
     MoEfitBayes$elpd <- a$estimates["elpd_loo",]
@@ -77,7 +83,7 @@ for (my_K_intial in 2:6) {
     # run MoE model with EM algorithm
     set.seed(123)
     MoEfitEM <- moewishartX(
-      S_list, X = matrix(rep(1, n), ncol = 1),
+      S_list, X = cbind(1, dat$X),
       method = "em",
       K = my_K_intial,  
       niter = 10000, verbose = TRUE
