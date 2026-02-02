@@ -1,7 +1,7 @@
 Package: moewishart
-Title: Bayesian Mixture of Experts of Wishart Distributions
+Title: Mixture of Experts of Wishart model for covariance data
 Version: 0.3
-Description: Bayesian modeling for the mixture of experts of Wishart or inverse-Wishart distributions. TBA...
+Description: MLE and Bayesian estimation for the mixture and mixture of experts of Wishart.
 Authors@R: c(person("The Tien", "Mai", role=c("aut")),
                 person("Zhi", "Zhao", role=c("aut","cre"), email = "zhi.zhao@medisin.uio.no"))
 Maintainer: Zhi Zhao <zhi.zhao@medisin.uio.no> 
