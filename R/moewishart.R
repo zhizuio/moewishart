@@ -422,7 +422,9 @@ moewishart.em <- function(S_list, K,
     best_start_loglik <- -Inf
     best_params <- list()
     
-    for (r in 1:n_restarts) {
+    r <- 1
+    repeat {
+    ##for (r in 1:n_restarts) {
       
       # A. Random Initialization for this attempt
       # Default nu
@@ -478,6 +480,9 @@ moewishart.em <- function(S_list, K,
         best_start_loglik <- curr_loglik
         best_params <- list(pi = curr_pi, Sigma = curr_Sigma, nu = curr_nu)
       }
+      
+      if (r >= n_restarts && curr_loglik > -Inf) break
+      r <- r + 1
     }
     
     # Set the main loop variables to the winner
