@@ -6,6 +6,14 @@
 
 # moewishart: Mixture-of-Experts Wishart models for covariance data.
 
+## The package contains 4 different algorithms for 2 model:
+- mixture model of Wishart distributions:
+    - EM algorithm for finding the MLE (maximum likelihood estimation);
+    - Bayesian approach using Gibbs-within-MH sampling algorithm.
+- Mixture-of-Expert model, in which the probability gating can depend on covariate(s):
+   - EM-MoE algorithm for finding the MLE (maximum likelihood estimation);
+   - Bayesian-MoE approach using Gibbs-within-MH sampling algorithm.  
+
 
 ## Installation
 
