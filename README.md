@@ -24,7 +24,5 @@ Install the latest development version from [GitHub](https://github.com/zhizuio/
 devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
 ```
 
-## Preliminary results
-
-See folder `numerical_studies/` for simulation and real data analysis with R code.
-
+## Example
+to be added, some usage example
