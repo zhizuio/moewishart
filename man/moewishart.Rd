@@ -25,7 +25,6 @@ moewishart(
   n_restarts = 3,
   restart_iters = 20,
   tol = 1e-06,
-  cpp = FALSE,
   verbose = TRUE
 )
 }
@@ -93,9 +92,6 @@ mode.}
 \item{tol}{Numeric. Convergence tolerance on absolute change of
 log-likelihood (EM), also used internally elsewhere.}
 
-\item{cpp}{Logical. If \code{TRUE}, use available C++ backend (both
-modes).}
-
 \item{verbose}{Logical. If \code{TRUE}, print progress information.}
 }
 \value{
@@ -157,8 +153,7 @@ Algorithms:
         when \code{estimate_nu = TRUE}. Degrees-of-freedom are updated
         via MH on \eqn{\log(\nu_k)} with proposal sd \code{mh_sigma}.
         Can integrate out \eqn{\pi} when sampling \eqn{z} if
-        \code{marginal.z = TRUE}. Optionally uses a C++ backend if
-        \code{cpp = TRUE}.
+        \code{marginal.z = TRUE}. 
   \item \code{method = "em"}: Maximizes the observed-data log-
         likelihood via EM. The E-step computes responsibilities via
         Wishart log-densities. The M-step updates \eqn{\pi_k} and

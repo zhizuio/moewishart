@@ -1,6 +1,6 @@
 Package: moewishart
 Title: Mixture of Experts of Wishart model for covariance data
-Version: 0.3
+Version: 0.4
 Description: MLE and Bayesian estimation for the mixture and mixture of experts of Wishart.
 Authors@R: c(person("The Tien", "Mai", role=c("aut")),
                 person("Zhi", "Zhao", role=c("aut","cre"), email = "zhi.zhao@medisin.uio.no"))
@@ -11,7 +11,5 @@ License: GPL-3
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-LinkingTo: Rcpp, RcppArmadillo
-Imports: Rcpp, utils, stats
-NeedsCompilation: yes
-SystemRequirements: C++17
+Imports: utils, stats
+NeedsCompilation: no
