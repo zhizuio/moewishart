@@ -97,7 +97,7 @@ for (my_K_intial in 2:6) {
     # Bayes MM
     elpd <- fit$fitBayes$elpd[1]
 
-    bic <- -2 * sum(fit$fitBayes$loglik[-c(1:burnin)]) + log(n) * (my_K_intial + p*(p+1)/2 + (my_K_intial-1)*(q+1)) 
+    bic <- -2 * mean(fit$fitBayes$loglik[-c(1:burnin)]) + log(n) * (my_K_intial + p*(p+1)/2 + (my_K_intial-1)*(q+1)) 
     r_ik <- fit$fitBayes$pi_ik[-c(1:burnin), , ]
     r_ik <- apply(r_ik, c(2, 3), mean)
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
@@ -110,7 +110,7 @@ for (my_K_intial in 2:6) {
     # Bayes MoE
     elpd <- fit$MoEfitBayes$elpd[1]
 
-    bic <- -2 * sum(fit$MoEfitBayes$loglik[-c(1:burnin)]) + log(n) * (my_K_intial + p*(p+1)/2 + (my_K_intial-1)*(q+1)) 
+    bic <- -2 * mean(fit$MoEfitBayes$loglik[-c(1:burnin)]) + log(n) * (my_K_intial + p*(p+1)/2 + (my_K_intial-1)*(q+1)) 
     r_ik <- fit$MoEfitBayes$pi_ik[-c(1:burnin), , ]
     r_ik <- apply(r_ik, c(2, 3), mean)
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
@@ -122,8 +122,9 @@ for (my_K_intial in 2:6) {
 
 
     # EM MM
-    aic <- -2 * sum(fit$fitEM$loglik) + 2 * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * 1)
-    bic <- -2 * sum(fit$fitEM$loglik) + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
+    loglik <- fit$fitEM$loglik[length(fit$fitEM$loglik)]
+    aic <- -2 * loglik + 2 * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * 1)
+    bic <- -2 * loglik + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
     r_ik <- fit$fitEM$tau
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
     # aic <- round(aic, digits = digits0)
@@ -135,8 +136,9 @@ for (my_K_intial in 2:6) {
     datIC <- rbind(datIC, data.frame(model = "EM", K = my_K_intial, simIdx = seed.idx, elpd = NA, icl = icl, icl2 = icl2, aic = aic, bic = bic))
 
     # EM MoE
-    aic <- -2 * sum(fit$MoEfitEM$loglik) + 2 * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * 1)
-    bic <- -2 * sum(fit$MoEfitEM$loglik) + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
+    loglik <- fit$MoEfitEM$loglik[length(fit$MoEfitEM$loglik)]
+    aic <- -2 * loglik + 2 * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * 1)
+    bic <- -2 * loglik + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
     r_ik <- fit$MoEfitEM$gamma
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
     # aic <- round(aic, digits = digits0)
@@ -164,7 +166,7 @@ rownames(IC_mean) <- NULL
 rownames(IC_mean) <- NULL
 
 IC_mean_sd <- IC_mean
-IC_mean_sd[, 3:7] <- matrix(paste0(as.matrix(round(IC_mean[, 3:7],2)), " (", as.matrix(round(IC_sd[, 3:7],2)), ")"), nrow=nrow(IC_mean))
+IC_mean_sd[, 3:7] <- matrix(paste0(as.matrix(round(IC_mean[, 3:7],1)), " (", as.matrix(round(IC_sd[, 3:7],2)), ")"), nrow=nrow(IC_mean))
 
 datIC_all <- list(datIC = datIC, IC_mean = IC_mean, IC_sd = IC_sd)
 save(datIC_all, file = paste0(file_directory, "n200_p", p, "datIC.RData"))
