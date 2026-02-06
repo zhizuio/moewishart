@@ -2,7 +2,7 @@
 % Please edit documentation in R/moewishart.R
 \name{moewishart}
 \alias{moewishart}
-\title{Algorithm for Wishart mixture(-of-experts) model}
+\title{EM/Bayesian estimation for Wishart mixture model}
 \usage{
 moewishart(
   S_list,
@@ -30,55 +30,146 @@ moewishart(
 )
 }
 \arguments{
-\item{S_list}{TBA}
+\item{S_list}{List of length \eqn{n} of SPD matrices, each \eqn{p \times p}.
+These are the observed matrices modeled by a mixture of Wisharts.}
 
-\item{K}{TBA}
+\item{K}{Integer. Number of mixture components.}
 
-\item{niter}{TBA}
+\item{niter}{Integer. Total iterations. Bayesian mode: total MCMC
+iterations (including burn-in). EM mode: maximum EM iterations
+(alias to \code{maxiter}).}
 
-\item{burnin}{TBA}
+\item{burnin}{Integer. Number of burn-in iterations (Bayesian mode).}
 
-\item{method}{one of \code{c("bayes", "em")}}
+\item{method}{Character; one of \code{c("bayes","em")}. Selects sampler
+or optimizer.}
 
-\item{thin}{TBA}
+\item{thin}{Integer. Thinning interval for saving draws (Bayesian).}
 
-\item{alpha}{TBA}
+\item{alpha}{Numeric vector length \eqn{K} (Dirichlet prior on
+\eqn{\pi}) or \code{NULL} to default to \code{rep(1, K)} (Bayesian).}
 
-\item{nu0}{TBA}
+\item{nu0}{Numeric. Inverse-Wishart prior df for \eqn{\Sigma_k}
+(Bayesian). Default: \eqn{p + 2}.}
 
-\item{Psi0}{TBA}
+\item{Psi0}{Numeric \eqn{p \times p} SPD matrix. Inverse-Wishart prior
+scale for \eqn{\Sigma_k} (Bayesian). Default: \code{diag(p)}.}
 
-\item{init_pi}{TBA}
+\item{init_pi}{Optional numeric vector length \eqn{K} summing to
+\eqn{1}. EM initialization for mixture weights. If \code{NULL},
+random or data-driven initialization is used.}
 
-\item{init_nu}{TBA}
+\item{init_nu}{Optional numeric vector length \eqn{K} of initial
+degrees of freedom. Used in both modes.}
 
-\item{init_Sigma}{TBA}
+\item{init_Sigma}{Optional list of \eqn{K} SPD matrices (each
+\eqn{p \times p}). EM initialization for \eqn{\Sigma_k}.}
 
-\item{marginal.z}{logical value to determine if using marginal z with integrating pi out}
+\item{marginal.z}{Logical. If \code{TRUE}, integrates out \eqn{\pi}
+when sampling \eqn{z} (collapsed step) in Bayesian mode. If
+\code{FALSE}, samples \eqn{z} conditional on current \eqn{\pi}.}
 
-\item{estimate_nu}{TBA}
+\item{estimate_nu}{Logical. If \code{TRUE}, estimate/update
+\eqn{\nu_k} (MH in Bayesian mode; Newton/EM in EM). If
+\code{FALSE}, \eqn{\nu_k} are fixed.}
 
-\item{nu_prior_a}{TBA}
+\item{nu_prior_a}{Numeric. Prior hyperparameter \eqn{a} for
+\eqn{\nu_k} (Bayesian), used when \code{estimate_nu = TRUE}.}
 
-\item{nu_prior_b}{TBA}
+\item{nu_prior_b}{Numeric. Prior hyperparameter \eqn{b} for
+\eqn{\nu_k} (Bayesian), used when \code{estimate_nu = TRUE}.}
 
-\item{mh_sigma}{TBA}
+\item{mh_sigma}{Numeric scalar or length-\eqn{K} vector. Proposal sd
+for MH updates on \eqn{\log(\nu_k)} (Bayesian, when estimating
+\eqn{\nu}).}
 
-\item{n_restarts}{TBA}
+\item{n_restarts}{Integer. Number of random restarts for EM. Ignored
+in Bayesian mode.}
 
-\item{restart_iters}{TBA}
+\item{restart_iters}{Integer. Number of short EM iterations per
+restart used to select a good initialization. Ignored in Bayesian
+mode.}
 
-\item{tol}{TBA}
+\item{tol}{Numeric. Convergence tolerance on absolute change of
+log-likelihood (EM), also used internally elsewhere.}
 
-\item{cpp}{test for Rcpp code}
+\item{cpp}{Logical. If \code{TRUE}, use available C++ backend (both
+modes).}
 
-\item{verbose}{TBA}
+\item{verbose}{Logical. If \code{TRUE}, print progress information.}
 }
 \value{
-An object of a list including ...
+A list whose structure depends on \code{method}:
+\itemize{
+  \item For \code{method = "bayes"}:
+    \itemize{
+      \item \code{pi_ik}: array (\code{nsave} x \code{n} x \code{K}),
+            saved per-observation weights.
+      \item \code{pi}: matrix (\code{nsave} x \code{K}), saved mixture
+            proportions.
+      \item \code{nu}: matrix (\code{nsave} x \code{K}), saved degrees-
+            of-freedom.
+      \item \code{Sigma}: list of length \code{nsave}; each is an
+            array (\eqn{p \times p \times K}) of \eqn{\Sigma_k} draws.
+      \item \code{z}: matrix (\code{nsave} x \code{n}), saved
+            allocations.
+      \item \code{sigma_posterior_mean}: array (\eqn{p \times p \times
+            K}), posterior mean of \eqn{\Sigma_k}.
+      \item \code{loglik}: numeric vector (length \code{niter}), log-
+            likelihood trace.
+      \item \code{loglik_individual}: matrix (\code{niter} x
+            \code{n}), per-observation log-likelihood.
+    }
+  \item For \code{method = "em"}:
+    \itemize{
+      \item \code{pi}: numeric vector length \eqn{K}, mixture
+            proportions.
+      \item \code{Sigma}: list length \code{K}, each a \eqn{p \times p}
+            SPD matrix.
+      \item \code{nu}: numeric vector length \code{K}, degrees-of-
+            freedom.
+      \item \code{tau}: matrix (\eqn{n \times K}), responsibilities.
+      \item \code{loglik}: numeric vector, log-likelihood per EM
+            iteration.
+      \item \code{iterations}: integer, number of EM iterations
+            performed.
+    }
+}
 }
 \description{
-TBA
+Fit finite mixtures of Wishart-distributed SPD matrices using either a
+Bayesian sampler or the EM algorithm. The input \code{S_list} is a list
+of \eqn{p \times p} SPD matrices. Under component \eqn{k},
+\eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)} with degrees of freedom
+\eqn{\nu_k} and SPD scale matrix \eqn{\Sigma_k}. Mixture weights
+\eqn{\pi_k} sum to \eqn{1}.
+}
+\details{
+Mixture mixture model:
+ \eqn{p(S_i) = \sum_{k=1}^K \pi_k \, f_W(S_i \mid \nu_k, \Sigma_k)}.
+
+Algorithms:
+\enumerate{
+  \item \code{method = "bayes"}: Samples latent labels \eqn{z}, weights
+        \eqn{\pi}, component scales \eqn{\Sigma_k}, and optionally
+        \eqn{\nu_k}. Uses a Dirichlet prior for \eqn{\pi}, inverse-
+        Wishart prior for \eqn{\Sigma_k}, and a prior on \eqn{\nu_k}
+        when \code{estimate_nu = TRUE}. Degrees-of-freedom are updated
+        via MH on \eqn{\log(\nu_k)} with proposal sd \code{mh_sigma}.
+        Can integrate out \eqn{\pi} when sampling \eqn{z} if
+        \code{marginal.z = TRUE}. Optionally uses a C++ backend if
+        \code{cpp = TRUE}.
+  \item \code{method = "em"}: Maximizes the observed-data log-
+        likelihood via EM. The E-step computes responsibilities via
+        Wishart log-densities. The M-step updates \eqn{\pi_k} and
+        \eqn{\Sigma_k}; optionally updates \eqn{\nu_k} when
+        \code{estimate_nu = TRUE}. Supports multiple random restarts.
+}
+
+Note that 
+(i) All matrices in \code{S_list} must be SPD. Small ridge terms may be 
+added internally for stability, and 
+(ii) Multiple EM restarts are recommended for robustness on difficult datasets.
 }
 \examples{
 

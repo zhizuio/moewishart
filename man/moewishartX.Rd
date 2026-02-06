@@ -2,7 +2,7 @@
 % Please edit documentation in R/moewishartX.R
 \name{moewishartX}
 \alias{moewishartX}
-\title{Algorithm for Wishart mixture(-of-experts) model with covariates}
+\title{EM/Bayesian estimation for Wishart MoE model}
 \usage{
 moewishartX(
   S_list,
@@ -28,51 +28,143 @@ moewishartX(
 )
 }
 \arguments{
-\item{S_list}{TBA}
+\item{S_list}{List of length \eqn{n} of SPD matrices, each \eqn{p \times p}.
+These are the observed responses modeled by the MoE.}
 
-\item{X}{TBA}
+\item{X}{Numeric matrix \eqn{n \times q} of covariates for the gating
+network. Include an intercept column if desired.}
 
-\item{K}{TBA}
+\item{K}{Integer. Number of mixture components (experts).}
 
-\item{niter}{TBA}
+\item{niter}{Integer. Total iterations. Bayesian mode: total MCMC
+iterations (including burn-in). EM mode: maximum EM iterations.}
 
-\item{burnin}{TBA}
+\item{burnin}{Integer. Number of burn-in iterations (Bayesian mode).}
 
-\item{method}{one of \code{c("bayes", "em")}}
+\item{method}{Character; one of \code{c("bayes", "em")}. Selects
+sampler or optimizer.}
 
-\item{thin}{TBA}
+\item{thin}{Integer. Thinning interval for saving draws (Bayesian).}
 
-\item{nu0}{TBA}
+\item{nu0}{Numeric. Inverse-Wishart prior df for \eqn{\Sigma_k}
+(Bayesian). Default: \eqn{p + 2} if \code{NULL}.}
 
-\item{Psi0}{TBA}
+\item{Psi0}{Numeric \eqn{p \times p} SPD matrix. Inverse-Wishart prior
+scale for \eqn{\Sigma_k} (Bayesian). Default: \code{diag(p)} if
+\code{NULL}.}
 
-\item{init_nu}{TBA}
+\item{init_nu}{Optional numeric vector length \eqn{K} of initial dfs
+\eqn{\nu_k}. Used for initialization.}
 
-\item{estimate_nu}{TBA}
+\item{estimate_nu}{Logical. If \code{TRUE}, estimate \eqn{\nu_k}
+(MH in Bayesian; Newton/EM in EM). If \code{FALSE}, keep \eqn{\nu_k}
+fixed at \code{init_nu}.}
 
-\item{nu_prior_a}{TBA}
+\item{nu_prior_a}{Numeric. Prior hyperparameter \eqn{a} for \eqn{\nu_k}
+(Bayesian), used when \code{estimate_nu = TRUE}.}
 
-\item{nu_prior_b}{TBA}
+\item{nu_prior_b}{Numeric. Prior hyperparameter \eqn{b} for \eqn{\nu_k}
+(Bayesian), used when \code{estimate_nu = TRUE}.}
 
-\item{mh_sigma}{TBA}
+\item{mh_sigma}{Numeric scalar or length-\eqn{K} vector. Proposal sd
+for MH updates on \eqn{\log(\nu_k)} (Bayesian, when estimating
+\eqn{\nu}).}
 
-\item{mh_beta}{TBA}
+\item{mh_beta}{Numeric scalar or length-\eqn{K-1} vector. Proposal sd
+for MH updates of the free \eqn{\Beta} columns (Bayesian).}
 
-\item{sigma_beta}{TBA}
+\item{sigma_beta}{Numeric. Prior sd of the Gaussian prior on \eqn{\Beta}
+(Bayesian).}
 
-\item{init}{TBA}
+\item{init}{Optional list with fields for EM initialization, e.g.,
+\code{beta}, \code{Sigma}, \code{nu}. See return structure.}
 
-\item{tol}{TBA}
+\item{tol}{Numeric. Convergence tolerance on absolute change of
+log-likelihood (EM), also used internally.}
 
-\item{ridge}{TBA}
+\item{ridge}{Numeric. Small diagonal ridge added to \eqn{\Sigma_k}
+updates in EM for numerical stability.}
 
-\item{verbose}{TBA}
+\item{verbose}{Logical. If \code{TRUE}, print progress information.}
 }
 \value{
-An object of a list including ...
+A list whose fields depend on \code{method}:
+\itemize{
+  \item For \code{method = "bayes"}:
+    \itemize{
+      \item \code{Beta_samples}: array (\code{nsave} x \code{q} x
+            \code{K}), saved draws of \eqn{\Beta} (last column zero).
+      \item \code{nu_samples}: matrix (\code{nsave} x \code{K}), draws
+            of \eqn{\nu_k}.
+      \item \code{Sigma_samples}: list of length \code{nsave}; each
+            element is an array (\eqn{p \times p \times K}) of
+            \eqn{\Sigma_k} draws.
+      \item \code{z_samples}: matrix (\code{nsave} x \code{n}), draws
+            of allocations.
+      \item \code{pi_ik}: array (\code{nsave} x \code{n} x \code{K}),
+            per-observation gating probabilities.
+      \item \code{pi_mean}: matrix (\code{n} x \code{K}), posterior
+            mean of gating probabilities.
+      \item \code{loglik}: numeric vector (length \code{niter}),
+            log-likelihood trace.
+      \item \code{loglik_individual}: matrix (\code{niter} x
+            \code{n}), per-observation log-likelihood.
+    }
+  \item For \code{method = "em"}:
+    \itemize{
+      \item \code{K, p, q, n}: problem dimensions.
+      \item \code{Beta}: matrix (\eqn{q \times K}), gating coefficients
+            with last column zero (reference class).
+      \item \code{Sigma}: list length \code{K}, each a \eqn{p \times p}
+            SPD matrix (scale).
+      \item \code{nu}: numeric vector length \code{K}, degrees of
+            freedom.
+      \item \code{gamma}: matrix (\eqn{n \times K}), final
+            responsibilities.
+      \item \code{loglik}: numeric vector, log-likelihood by EM
+            iteration.
+      \item \code{iter}: integer, number of EM iterations performed.
+    }
+}
 }
 \description{
-TBA
+Fit a mixture-of-experts model for symmetric positive-definite (SPD)
+matrices with covariate-dependent mixing proportions (gating network).
+Components are Wishart-distributed. Supports Bayesian sampling and
+EM-based maximum-likelihood estimation.
+}
+\details{
+MoE-Wishart Model:
+\itemize{
+  \item Observation: \eqn{S_i} is a \eqn{p \times p} SPD matrix. Given
+        allocation \eqn{z_i=k}, \eqn{S_i \mid z_i \sim W_p(\nu_k,
+        \Sigma_k)} with df \eqn{\nu_k} and scale \eqn{\Sigma_k}.
+  \item Gating (MoE): Let \eqn{X_i} be \eqn{q}-dimensional covariates.
+        Mixing weights \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} follow a
+        softmax regression:
+        \eqn{\pi_{ik} = \exp(\eta_{ik})/\sum_{j=1}^K \exp(\eta_{ij})},
+        where \eqn{\eta_i = X_i^\top \Beta}, \eqn{\Beta} is
+        \eqn{q \times K}. Identifiability: last column of \eqn{\Beta}
+        is fixed to zero.
+}
+
+Algorithms:
+\enumerate{
+  \item Bayesian (\code{method = "bayes"}): Metropolis-within-Gibbs
+        sampler for \eqn{z}, \eqn{\Sigma_k}, optional \eqn{\nu_k}, and
+        \eqn{\Beta}. Gaussian priors on \eqn{\Beta} with sd
+        \code{sigma_beta}. Proposals use \code{mh_sigma} for
+        \eqn{\log(\nu_k)} and \code{mh_beta} for \eqn{\Beta}.
+  \item EM (\code{method = "em"}): E-step responsibilities using
+        Wishart log-densities and softmax gating. M-step updates
+        \eqn{\Sigma_k}, optional \eqn{\nu_k}, and \eqn{\Beta} via
+        weighted multinomial logistic regression (BFGS).
+}
+
+Note that:
+(i) include an intercept column in \code{X}; none is added by default, and
+(ii) all \code{S_list} elements must be SPD. A small \code{ridge} may be 
+added for stability.
 }
 \examples{
 

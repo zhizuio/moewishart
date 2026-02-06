@@ -172,7 +172,7 @@ rownames(IC_mean) <- NULL
 rownames(IC_mean) <- NULL
 
 IC_mean_sd <- IC_mean
-IC_mean_sd[, 3:7] <- matrix(paste0(as.matrix(round(IC_mean[, 3:7],2)), " (", as.matrix(round(IC_sd[, 3:7],2)), ")"), nrow=nrow(IC_mean))
+IC_mean_sd[, 3:7] <- matrix(paste0(as.matrix(round(IC_mean[, 3:7],1)), " (", as.matrix(round(IC_sd[, 3:7],2)), ")"), nrow=nrow(IC_mean))
 
 datIC_all <- list(datIC = datIC, IC_mean = IC_mean, IC_sd = IC_sd)
 save(datIC_all, file = paste0(file_directory, "n200_p", p, "datIC.RData"))

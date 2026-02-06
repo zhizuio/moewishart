@@ -3,9 +3,9 @@
 \docType{package}
 \name{moewishart-package}
 \alias{moewishart-package}
-\title{moewishart: Bayesian Mixture of Experts of Wishart Distributions}
+\title{moewishart: Mixture of Experts of Wishart model for covariance data}
 \description{
-Bayesian modeling for the mixture of experts of Wishart or inverse-Wishart distributions. TBA...
+MLE and Bayesian estimation for the mixture and mixture of experts of Wishart.
 }
 \seealso{
 Useful links:

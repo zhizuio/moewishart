@@ -1,28 +1,91 @@
-#' @title Simulate data
+#' @title Simulate data from a Wishart mixture or mixture-of-experts model
 #'
 #' @description
-#' Simulate data from mixture of experts of wishart distributions
+#' Generate synthetic SPD matrices from either:
+#' (i) a finite mixture of Wishart components with fixed mixing proportions, or
+#' (ii) a mixture-of-experts (MoE) where mixing proportions depend on covariates
+#'   via a softmax gating model.
 #'
 #' @name simData
 #'
 #' @importFrom stats rbinom rnorm runif rexp rgamma pnorm rWishart toeplitz
 #'
-#' @param n number of observations
-#' @param p dimension of the Wishart distribution
-#' @param K number of latent components
-#' @param Xq number of covariates for modeling subpopulation probabilities
-#' @param betas coefficient matrix
-#' @param pis vector of probabilities of subpopulations
-#' @param nus vector of degrees of freedom of Wishart distributions
-#' @param Sigma list of scale matrices of the Wishart distribution
+#' @param n Integer. Number of observations to simulate.
+#' @param p Integer. Dimension of the Wishart distribution (matrix size
+#'   \eqn{p \times p}).
+#' @param K Integer. Number of latent components. Required when
+#'   \code{Xq > 0}. If \code{Xq = 0}, defaults to \code{length(pis)}.
+#' @param Xq Integer. Number of covariates for the gating network
+#'   (MoE case). If \code{Xq = 0}, a standard mixture (no covariates)
+#'   is simulated.
+#' @param betas Numeric matrix \eqn{Xq \times K} of gating coefficients
+#'   used when \code{Xq > 0}. If \code{NULL}, random coefficients are
+#'   generated and the last column is set to zero (reference class).
+#' @param pis Numeric vector of length \eqn{K} giving fixed mixture
+#'   proportions when \code{Xq = 0}. Ignored when \code{Xq > 0}.
+#' @param nus Numeric vector length \eqn{K}, degrees of freedom
+#'   \eqn{\nu_k} for each component (must exceed \eqn{p - 1}).
+#' @param Sigma Optional list length \eqn{K} of SPD scale matrices
+#'   \eqn{\Sigma_k} (each \eqn{p \times p}). If \code{NULL}, defaults are
+#'   generated based on \code{K} and \code{p}.
 #'
-#' @return An object of a list
+#'
+#' @details
+#' Models:
 #' \itemize{
-#' \item "\code{S}" - a list of covariance matrices
-#' \item "\code{z}" - a vector of probabilities
-#' \item "\code{Sigma_list}" - a list of scale matrices of the Wishart distribution
-#' \item "\code{X}" - a matrix or NULL of covariates
+#'   \item Fixed mixture (no covariates, \code{Xq = 0}):
+#'         \eqn{z_i \sim \mathrm{Categorical}(\pi)}, and
+#'         \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)}.
+#'   \item Mixture-of-experts (covariates, \code{Xq > 0}):
+#'         Let \eqn{X_i \in \mathbb{R}^{Xq}}. The mixing weights are
+#'         \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} given by softmax regression
+#'         \eqn{\pi_{ik} = \exp(X_i^\top \beta_k) / \sum_{j=1}^K
+#'         \exp(X_i^\top \beta_j)}. Labels \eqn{z_i} are drawn from
+#'         \eqn{\mathrm{Categorical}(\pi_i)} and
+#'         \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)}.
 #' }
+#'
+#' Simulation steps:
+#' \enumerate{
+#'   \item Construct \code{pis}:
+#'         \itemize{
+#'           \item If \code{Xq = 0}, replicate the provided \code{pis}
+#'                 over \code{n} rows.
+#'           \item If \code{Xq > 0}, generate \code{X} ~ N(0, I) and compute
+#'                 softmax probabilities using \code{betas} (last column set
+#'                 to zero by default identifiability).
+#'         }
+#'   \item If \code{Sigma} is not provided, create default \eqn{\Sigma_k}
+#'         matrices (SPD) depending on \code{K} and \code{p}.
+#'   \item Sample labels \eqn{z_i \sim \mathrm{Categorical}(\pi_i)}.
+#'   \item Draw \eqn{S_i} from \eqn{W_p(\nu_{z_i}, \Sigma_{z_i})} via
+#'         \code{rWishart}.
+#' }
+#'
+#' Note that: 
+#' (i) in the MoE case, no intercept is automatically added to \code{X}.
+#'         Use \code{Xq} to include desired covariates; the default
+#'         \code{betas} is randomly generated with \code{betas[, K] = 0}, and
+#' (ii) provided \code{Sigma} must be a list of SPD \eqn{p \times p}
+#'         matrices. Provided \code{nus} must exceed \eqn{p - 1}.
+#'
+#'
+#' @return A list with the following elements:
+#' \itemize{
+#'   \item \code{S}: list of length \code{n} of simulated SPD matrices
+#'         \eqn{S_i}.
+#'   \item \code{z}: integer vector length \code{n} of component labels.
+#'   \item \code{nu}: numeric vector length \eqn{K} of degrees of freedom.
+#'   \item \code{pi}: matrix \eqn{n \times K} of mixing probabilities
+#'         (rows sum to \eqn{1}).
+#'   \item \code{Sigma_list}: list length \eqn{K} of the scale matrices
+#'         used for simulation.
+#'   \item \code{X}: matrix \eqn{n \times Xq} of covariates if
+#'         \code{Xq > 0}, otherwise \code{NULL}.
+#'   \item \code{betas}: the gating coefficient matrix used when
+#'         \code{Xq > 0}, otherwise \code{NULL}.
+#' }
+#'
 #'
 #'
 #' @examples

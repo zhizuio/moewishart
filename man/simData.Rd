@@ -2,7 +2,7 @@
 % Please edit documentation in R/simData.R
 \name{simData}
 \alias{simData}
-\title{Simulate data}
+\title{Simulate data from a Wishart mixture or mixture-of-experts model}
 \usage{
 simData(
   n = 200,
@@ -16,33 +16,93 @@ simData(
 )
 }
 \arguments{
-\item{n}{number of observations}
+\item{n}{Integer. Number of observations to simulate.}
 
-\item{p}{dimension of the Wishart distribution}
+\item{p}{Integer. Dimension of the Wishart distribution (matrix size
+\eqn{p \times p}).}
 
-\item{Xq}{number of covariates for modeling subpopulation probabilities}
+\item{Xq}{Integer. Number of covariates for the gating network
+(MoE case). If \code{Xq = 0}, a standard mixture (no covariates)
+is simulated.}
 
-\item{K}{number of latent components}
+\item{K}{Integer. Number of latent components. Required when
+\code{Xq > 0}. If \code{Xq = 0}, defaults to \code{length(pis)}.}
 
-\item{betas}{coefficient matrix}
+\item{betas}{Numeric matrix \eqn{Xq \times K} of gating coefficients
+used when \code{Xq > 0}. If \code{NULL}, random coefficients are
+generated and the last column is set to zero (reference class).}
 
-\item{pis}{vector of probabilities of subpopulations}
+\item{pis}{Numeric vector of length \eqn{K} giving fixed mixture
+proportions when \code{Xq = 0}. Ignored when \code{Xq > 0}.}
 
-\item{nus}{vector of degrees of freedom of Wishart distributions}
+\item{nus}{Numeric vector length \eqn{K}, degrees of freedom
+\eqn{\nu_k} for each component (must exceed \eqn{p - 1}).}
 
-\item{Sigma}{list of scale matrices of the Wishart distribution}
+\item{Sigma}{Optional list length \eqn{K} of SPD scale matrices
+\eqn{\Sigma_k} (each \eqn{p \times p}). If \code{NULL}, defaults are
+generated based on \code{K} and \code{p}.}
 }
 \value{
-An object of a list
+A list with the following elements:
 \itemize{
-\item "\code{S}" - a list of covariance matrices
-\item "\code{z}" - a vector of probabilities
-\item "\code{Sigma_list}" - a list of scale matrices of the Wishart distribution
-\item "\code{X}" - a matrix or NULL of covariates
+  \item \code{S}: list of length \code{n} of simulated SPD matrices
+        \eqn{S_i}.
+  \item \code{z}: integer vector length \code{n} of component labels.
+  \item \code{nu}: numeric vector length \eqn{K} of degrees of freedom.
+  \item \code{pi}: matrix \eqn{n \times K} of mixing probabilities
+        (rows sum to \eqn{1}).
+  \item \code{Sigma_list}: list length \eqn{K} of the scale matrices
+        used for simulation.
+  \item \code{X}: matrix \eqn{n \times Xq} of covariates if
+        \code{Xq > 0}, otherwise \code{NULL}.
+  \item \code{betas}: the gating coefficient matrix used when
+        \code{Xq > 0}, otherwise \code{NULL}.
 }
 }
 \description{
-Simulate data from mixture of experts of wishart distributions
+Generate synthetic SPD matrices from either:
+(i) a finite mixture of Wishart components with fixed mixing proportions, or
+(ii) a mixture-of-experts (MoE) where mixing proportions depend on covariates
+  via a softmax gating model.
+}
+\details{
+Models:
+\itemize{
+  \item Fixed mixture (no covariates, \code{Xq = 0}):
+        \eqn{z_i \sim \mathrm{Categorical}(\pi)}, and
+        \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)}.
+  \item Mixture-of-experts (covariates, \code{Xq > 0}):
+        Let \eqn{X_i \in \mathbb{R}^{Xq}}. The mixing weights are
+        \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} given by softmax regression
+        \eqn{\pi_{ik} = \exp(X_i^\top \beta_k) / \sum_{j=1}^K
+        \exp(X_i^\top \beta_j)}. Labels \eqn{z_i} are drawn from
+        \eqn{\mathrm{Categorical}(\pi_i)} and
+        \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)}.
+}
+
+Simulation steps:
+\enumerate{
+  \item Construct \code{pis}:
+        \itemize{
+          \item If \code{Xq = 0}, replicate the provided \code{pis}
+                over \code{n} rows.
+          \item If \code{Xq > 0}, generate \code{X} ~ N(0, I) and compute
+                softmax probabilities using \code{betas} (last column set
+                to zero by default identifiability).
+        }
+  \item If \code{Sigma} is not provided, create default \eqn{\Sigma_k}
+        matrices (SPD) depending on \code{K} and \code{p}.
+  \item Sample labels \eqn{z_i \sim \mathrm{Categorical}(\pi_i)}.
+  \item Draw \eqn{S_i} from \eqn{W_p(\nu_{z_i}, \Sigma_{z_i})} via
+        \code{rWishart}.
+}
+
+Note that: 
+(i) in the MoE case, no intercept is automatically added to \code{X}.
+        Use \code{Xq} to include desired covariates; the default
+        \code{betas} is randomly generated with \code{betas[, K] = 0}, and
+(ii) provided \code{Sigma} must be a list of SPD \eqn{p \times p}
+        matrices. Provided \code{nus} must exceed \eqn{p - 1}.
 }
 \examples{
 

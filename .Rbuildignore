@@ -1,6 +1,6 @@
 ^test_build.R$
 ^results/
-^simulation_doc/
+^numerical_studies/
 ^\.github$
 ^LICENSE$
 ^.*\.pdf$

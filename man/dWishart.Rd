@@ -7,21 +7,48 @@
 dWishart(S, nu, Sigma, detS_val = NULL, logarithm = TRUE)
 }
 \arguments{
-\item{S}{TBA}
+\item{S}{Numeric \eqn{p \times p} SPD matrix at which to evaluate the
+density.}
 
-\item{nu}{TBA}
+\item{nu}{Numeric. Degrees of freedom \eqn{\nu} (must exceed \eqn{p-1}).}
 
-\item{Sigma}{TBA}
+\item{Sigma}{Numeric \eqn{p \times p} SPD scale matrix \eqn{\Sigma}.}
 
-\item{detS_val}{TBA}
+\item{detS_val}{Optional numeric. Precomputed \eqn{\log|S|} to reuse;
+if \code{NULL}, it is computed internally.}
 
-\item{logarithm}{logical value for log scale or not}
+\item{logarithm}{Logical. If \code{TRUE}, return log-density;
+otherwise return density.}
 }
 \value{
-A value of the (log) density of the Wishart distribution
+A numeric scalar: the log-density if \code{logarithm = TRUE},
+  otherwise the density.
 }
 \description{
-TBA
+Compute the (log) density of a \eqn{p}-dimensional Wishart distribution
+\eqn{W_p(\nu, \Sigma)} at an SPD matrix \eqn{S}. Returns either the
+log-density or the density depending on \code{logarithm}.
+}
+\details{
+Let \eqn{S \sim W_p(\nu, \Sigma)} with degrees of freedom \eqn{\nu}
+and scale matrix \eqn{\Sigma} (SPD). The density is:
+\deqn{
+  f(S \mid \nu, \Sigma) =
+  \frac{|S|^{(\nu - p - 1)/2}\,
+        \exp\{-\tfrac{1}{2}\,\mathrm{tr}(\Sigma^{-1}S)\}}
+       {2^{\nu p/2}\,|\Sigma|^{\nu/2}\,\Gamma_p(\nu/2)},
+}
+where \eqn{\Gamma_p(\cdot)} is the multivariate gamma function and
+\eqn{p} is the dimension. 
+
+Note that 
+(i) \code{detS_val} can be supplied to avoid recomputing \eqn{\log|S|}, 
+ which is useful inside EM/MCMC loops, and 
+ (ii) small diagonal jitter is added internally to \eqn{S} and \eqn{\Sigma} 
+ when computing determinants or solves for numerical stability.
+
+Constraints: (i) \eqn{S} and \eqn{\Sigma} must be SPD, and (ii) the Wishart 
+requires \eqn{\nu > p - 1}.
 }
 \examples{
 
