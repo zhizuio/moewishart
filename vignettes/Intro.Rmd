@@ -12,8 +12,15 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
 options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
+<!-- badges: 
+[![r-universe](https://ocbe-uio.r-universe.dev/badges/moewishart)](https://ocbe-uio.r-universe.dev/moewishart)
+[![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
+-->
+[![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 
-This package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
+# moewishart: Mixture-of-Experts Wishart models for covariance data
+
+This R-package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
 It contains 4 different algorithms for 2 model:
 
 - mixture model of Wishart distributions:
@@ -45,7 +52,7 @@ Data simulation from a MoE-Wishart model:
 - Number of latent components $K = 3$
 - $q$ covariates $\mathbf X = \{x_{ij}\} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$
 - Fixed covariate effects $\boldsymbol\beta \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
-- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp\{\mathbf X_i\boldsymbol\beta_k\} / \sum_{l=1}^K\exp\{\mathbf X_i\boldsymbol\beta_k\}$
+- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_k)$
 - Degrees of freedom $\boldsymbol\nu = (8, 12, 3)$
 - Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3$
 - Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
@@ -83,17 +90,33 @@ fit <- moewishartX(
 
 <br> 
 
-```{r}
-# posterior summaries
-apply(fit$nu, 2, mean) # estimated nu
-dat$nu # true nu
+Posterior means for degrees of freedom (DoF) of Wishart distributions:
 
-# Wishart scale matrices
+```{r}
+burnin <- 1000
+nu_mcmc <- fit$nu[-c(1:burnin), ]
+colMeans(nu_mcmc) 
+```
+
+<br> 
+True DoF:
+
+```{r}
+dat$nu # true nu
+```
+
+<br> 
+Posterior means for scale matrices of Wishart distributions:
+
+```{r}
 MoE_Sigma <- Reduce("+", fit$Sigma) / length(fit$Sigma)
 MoE_Sigma
+```
 
-# gating coefficients
-burnin <- 1000
+<br> 
+Posterior means for gating coefficients:
+
+```{r}
 beta_mcmc <- fit$Beta_samples[-c(1:burnin), , ]
 apply(beta_mcmc, c(2, 3), mean)
 ```
@@ -112,12 +135,18 @@ fit2 <- moewishart(
 ```
 
 <br> 
+Posterior means for subpopulation probabilities:
 
 ```{r}
-# posterior summaries
-colMeans(fit2$pi[-c(1:burnin), ]) # estimated pis
+colMeans(fit2$pi[-c(1:burnin), ]) 
+```
 
-colMeans(fit2$nu[-c(1:burnin), ]) # estimated nu
+<br> 
+
+Posterior means for DoF of Wishart distributions:
+
+```{r}
+colMeans(fit2$nu[-c(1:burnin), ]) 
 ```
 
 
@@ -135,12 +164,23 @@ fit3 <- moewishartX(
 
 <br> 
 
+EM estimates for DoF of Wishart distributions:
+
 ```{r}
-# EM estimates
 fit3$nu
+```
 
+<br> 
+EM estimates for Wishart scale matrices:
+
+```{r}
 fit3$Sigma
+```
 
+<br> 
+EM estimates for gating coefficients:
+
+```{r}
 fit3$Beta
 ```
 
@@ -158,11 +198,16 @@ fit4 <- moewishart(
 ```
 
 <br> 
+EM estimates for DoF of Wishart distributions:
 
 ```{r}
-# EM estimates
 fit4$nu
+```
 
+<br> 
+EM estimate for Wishart scale matrices:
+
+```{r}
 fit4$Sigma
 ```
 

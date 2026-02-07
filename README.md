@@ -4,10 +4,9 @@
 -->
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 
-# moewishart: Mixture-of-Experts Wishart models for covariance data.
+# moewishart: Mixture-of-Experts Wishart models for covariance data
 
-
-This package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
+This R-package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
 It contains 4 different algorithms for 2 model:
 
 - mixture model of Wishart distributions:
@@ -22,7 +21,8 @@ It contains 4 different algorithms for 2 model:
 
 Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart)
 
-```{r eval=FALSE}
+
+``` r
 #library("devtools")
 devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
 ```
@@ -39,7 +39,7 @@ Data simulation from a MoE-Wishart model:
 - Number of latent components $K = 3$
 - $q$ covariates $\mathbf X = \{x_{ij}\} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$
 - Fixed covariate effects $\boldsymbol\beta \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
-- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp\{\mathbf X_i\boldsymbol\beta_k\} / \sum_{l=1}^K\exp\{\mathbf X_i\boldsymbol\beta_k\}$
+- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_k)$
 - Degrees of freedom $\boldsymbol\nu = (8, 12, 3)$
 - Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3$
 - Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
@@ -47,7 +47,8 @@ Data simulation from a MoE-Wishart model:
 
 ### 1. Working model: Bayesian MoE-Wishart model
 
-```{r, results='hide'}
+
+``` r
 library(moewishart)
 
 set.seed(123)
@@ -77,26 +78,40 @@ fit <- moewishartX(
 
 <br> 
 
-```{r}
-# posterior summaries
-apply(fit$nu, 2, mean) # estimated nu
-```
-```
-## [1]  8.319521 14.230812  3.315451
+Posterior means for degrees of freedom (DoF) of Wishart distributions:
+
+
+``` r
+burnin <- 1000
+nu_mcmc <- fit$nu[-c(1:burnin), ]
+colMeans(nu_mcmc) 
 ```
 
-```{r}
+```
+## [1]  8.574911 14.397351  3.310689
+```
+
+<br> 
+True DoF:
+
+
+``` r
 dat$nu # true nu
 ```
+
 ```
 ## [1]  8 12  3
 ```
 
-```{r}
-# Wishart scale matrices
+<br> 
+Posterior means for scale matrices of Wishart distributions:
+
+
+``` r
 MoE_Sigma <- Reduce("+", fit$Sigma) / length(fit$Sigma)
 MoE_Sigma
 ```
+
 ```
 ## , , 1
 ## 
@@ -117,12 +132,15 @@ MoE_Sigma
 ## [2,] -0.1267705  3.0385263
 ```
 
-```{r}
-# gating coefficients
-burnin <- 1000
+<br> 
+Posterior means for gating coefficients:
+
+
+``` r
 beta_mcmc <- fit$Beta_samples[-c(1:burnin), , ]
 apply(beta_mcmc, c(2, 3), mean)
 ```
+
 ```
 ##            [,1]        [,2] [,3]
 ## [1,] -0.3656861 -0.08024419    0
@@ -134,7 +152,8 @@ apply(beta_mcmc, c(2, 3), mean)
 
 ### 2. Working model: Bayesian Wishart mixture model
 
-```{r, results='hide'}
+
+``` r
 # fit Bayesian Wishart mixture model
 set.seed(123)
 fit2 <- moewishart(
@@ -145,18 +164,26 @@ fit2 <- moewishart(
 ```
 
 <br> 
+Posterior means for subpopulation probabilities:
 
-```{r}
-# posterior summaries
-colMeans(fit2$pi[-c(1:burnin), ]) # estimated pis
+
+``` r
+colMeans(fit2$pi[-c(1:burnin), ]) 
 ```
+
 ```
 ## [1] 0.2690425 0.5088864 0.2220712
 ```
 
-```{r}
-colMeans(fit2$nu[-c(1:burnin), ]) # estimated nu
+<br> 
+
+Posterior means for DoF of Wishart distributions:
+
+
+``` r
+colMeans(fit2$nu[-c(1:burnin), ]) 
 ```
+
 ```
 ## [1]  7.986113 12.153338  3.284252
 ```
@@ -164,7 +191,8 @@ colMeans(fit2$nu[-c(1:burnin), ]) # estimated nu
 
 ### 3. Working model: MoE-Wishart model via EM algorithm
 
-```{r}
+
+``` r
 # fit MoE-Wishart model via EM alg.
 set.seed(123)
 fit3 <- moewishartX(
@@ -173,6 +201,7 @@ fit3 <- moewishartX(
   niter = 3000
 )
 ```
+
 ```
 ## Iter   1  loglik = -2079.322610
 ## Iter   2  loglik = -1998.694495
@@ -211,17 +240,25 @@ fit3 <- moewishartX(
 
 <br> 
 
-```{r}
-# EM estimates
+EM estimates for DoF of Wishart distributions:
+
+
+``` r
 fit3$nu
 ```
+
 ```
 ## [1]  7.515417 13.987158  3.274665
 ```
 
-```{r}
+<br> 
+EM estimates for Wishart scale matrices:
+
+
+``` r
 fit3$Sigma
 ```
+
 ```
 ## [[1]]
 ##           [,1]      [,2]
@@ -239,9 +276,14 @@ fit3$Sigma
 ## [2,] -0.1886288  3.0983710
 ```
 
-```{r}
+<br> 
+EM estimates for gating coefficients:
+
+
+``` r
 fit3$Beta
 ```
+
 ```
 ##             comp1      comp2 comp3
 ## [1,] -0.006270492  0.1302039     0
@@ -253,7 +295,8 @@ fit3$Beta
 
 ### 4. Working model: Wishart mixture model via EM algorithm
 
-```{r}
+
+``` r
 # fit Wishart mixture model via EM alg.
 set.seed(123)
 fit4 <- moewishart(
@@ -262,6 +305,7 @@ fit4 <- moewishart(
   niter = 3000
 )
 ```
+
 ```
 ## Running 3 initialization restarts...
 ##   -> Restart 1: Loglik = -2011.91
@@ -282,18 +326,25 @@ fit4 <- moewishart(
 ```
 
 <br> 
+EM estimates for DoF of Wishart distributions:
 
-```{r}
-# EM estimates
+
+``` r
 fit4$nu
 ```
+
 ```
 ## [1]  2.995383  7.682819 11.309040
 ```
 
-```{r}
+<br> 
+EM estimate for Wishart scale matrices:
+
+
+``` r
 fit4$Sigma
 ```
+
 ```
 ## [[1]]
 ##           [,1]     [,2]
@@ -315,3 +366,4 @@ fit4$Sigma
 ## References
 
 The Tien Mai, Zhi Zhao (2026). xxxx
+
