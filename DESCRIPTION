@@ -8,8 +8,10 @@ Maintainer: Zhi Zhao <zhi.zhao@medisin.uio.no>
 URL: https://github.com/zhizuio/moewishart
 BugReports: https://github.com/zhizuio/moewishart/issues
 License: GPL-3
+VignetteBuilder: knitr
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Imports: utils, stats
+Suggests: knitr
 NeedsCompilation: no

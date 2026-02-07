@@ -1,0 +1,173 @@
+---
+title: "Introduction"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Introduction}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
+
+
+This package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
+It contains 4 different algorithms for 2 model:
+
+- mixture model of Wishart distributions:
+    - EM algorithm for finding the MLE;
+    - Bayesian approach using Gibbs-within-MH sampling algorithm.
+- Mixture-of-Expert model, in which the probability gating can depend on covariate(s):
+   - EM-MoE algorithm for finding the MLE;
+   - Bayesian-MoE approach using Gibbs-within-MH sampling algorithm.  
+
+
+## Installation
+
+Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart)
+
+```{r eval=FALSE}
+#library("devtools")
+devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
+```
+
+## Example
+
+
+<br> 
+
+Data simulation from a MoE-Wishart model:
+
+- Sample size $n = 200$
+- Dimension of the Wishart distribution $p = 2$
+- Number of latent components $K = 3$
+- $q$ covariates $\mathbf X = \{x_{ij}\} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$
+- Fixed covariate effects $\boldsymbol\beta \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
+- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp\{\mathbf X_i\boldsymbol\beta_k\} / \sum_{l=1}^K\exp\{\mathbf X_i\boldsymbol\beta_k\}$
+- Degrees of freedom $\boldsymbol\nu = (8, 12, 3)$
+- Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3$
+- Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
+
+
+### 1. Working model: Bayesian MoE-Wishart model
+
+```{r, results='hide'}
+library(moewishart)
+
+set.seed(123)
+n <- 200 # number of subjects
+p <- 2 # dimension of covariance matrix
+set.seed(123) # fix coefficients of underlying MoE model
+Xq <- 3; K = 3
+betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
+betas[, K] <- 0
+
+# simulate data
+dat <- simData(n, p,
+  Xq = 3, K = 3, betas = betas,
+  pis = c(0.35, 0.40, 0.25),
+  nus = c(8, 12, 3)
+)
+
+# fit Bayesian MoE-Wishart model
+set.seed(123)
+fit <- moewishartX(
+  dat$S, X = cbind(1, dat$X), K = 3, 
+  mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
+  mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
+  niter = 3000, burnin = 1000
+)
+```
+
+<br> 
+
+```{r}
+# posterior summaries
+apply(fit$nu, 2, mean) # estimated nu
+dat$nu # true nu
+
+# Wishart scale matrices
+MoE_Sigma <- Reduce("+", fit$Sigma) / length(fit$Sigma)
+MoE_Sigma
+
+# gating coefficients
+burnin <- 1000
+beta_mcmc <- fit$Beta_samples[-c(1:burnin), , ]
+apply(beta_mcmc, c(2, 3), mean)
+```
+
+
+### 2. Working model: Bayesian Wishart mixture model
+
+```{r, results='hide'}
+# fit Bayesian Wishart mixture model
+set.seed(123)
+fit2 <- moewishart(
+  dat$S, K = 3, 
+  mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances
+  niter = 3000, burnin = 1000
+)
+```
+
+<br> 
+
+```{r}
+# posterior summaries
+colMeans(fit2$pi[-c(1:burnin), ]) # estimated pis
+
+colMeans(fit2$nu[-c(1:burnin), ]) # estimated nu
+```
+
+
+### 3. Working model: MoE-Wishart model via EM algorithm
+
+```{r}
+# fit MoE-Wishart model via EM alg.
+set.seed(123)
+fit3 <- moewishartX(
+  dat$S, X = cbind(1, dat$X), K = 3, 
+  method = "em",
+  niter = 3000
+)
+```
+
+<br> 
+
+```{r}
+# EM estimates
+fit3$nu
+
+fit3$Sigma
+
+fit3$Beta
+```
+
+
+### 4. Working model: Wishart mixture model via EM algorithm
+
+```{r}
+# fit Wishart mixture model via EM alg.
+set.seed(123)
+fit4 <- moewishart(
+  dat$S, K = 3, 
+  method = "em",
+  niter = 3000
+)
+```
+
+<br> 
+
+```{r}
+# EM estimates
+fit4$nu
+
+fit4$Sigma
+```
+
+
+## References
+
+The Tien Mai, Zhi Zhao (2026). xxxx
+
