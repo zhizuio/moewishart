@@ -13,5 +13,5 @@ Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
 Imports: utils, stats
-Suggests: knitr
+Suggests: rmarkdown, knitr
 NeedsCompilation: no
