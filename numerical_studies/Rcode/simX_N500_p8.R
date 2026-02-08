@@ -59,7 +59,7 @@ for (seed.idx in 1:n_sim) {
     method = "em", #cpp = TRUE,
     K = my_K_intial,  
     niter = 10000, verbose = TRUE,
-    n_restarts = 5, restart_iters = 40, tol = 1e-8
+    n_restarts = 20, restart_iters = 40, tol = 1e-8
   )
 
   # run Bayesian MoE model
@@ -110,42 +110,25 @@ source("moewishartX_errors.R")
 # save results as a data frame
 datSimN500 <- data.frame(n = NULL, method = NULL, estimator = NULL, error = NULL )
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0", estimator = "pi-norm1", error = pi.error[,1] )) # posterior mean
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes", estimator = "pi-norm1", error = pi.error[,3] )) # BMA
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "pi-norm1", error = pi.error[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "pi-norm1", error = pi.error[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "pi-norm1", error = pi.error2[,1] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "pi-norm1", error = pi.error2[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "pi-norm1", error = pi.error2[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "pi-norm1", error = pi.error2[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0", estimator = "nu-norm1", error = nu.error[,1] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes", estimator = "nu-norm1", error = nu.error[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "nu-norm1", error = nu.error[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "nu-norm1", error = nu.error[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "nu-norm1", error = nu.error2[,1] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "nu-norm1", error = nu.error2[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "nu-norm1", error = nu.error2[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "nu-norm1", error = nu.error2[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0", estimator = "Sigma-norm1", error = Sigma.error[,1] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes", estimator = "Sigma-norm1", error = Sigma.error[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "Sigma-norm1", error = Sigma.error[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "Sigma-norm1", error = Sigma.error[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "Sigma-norm1", error = Sigma.error2[,1] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "Sigma-norm1", error = Sigma.error2[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Sigma-norm1", error = Sigma.error2[,5] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Sigma-norm1", error = Sigma.error2[,3] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0", estimator = "Sigma-normF", error = Sigma.error[,2] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes", estimator = "Sigma-normF", error = Sigma.error[,4] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "Sigma-normF", error = Sigma.error[,6] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "Sigma-normF", error = Sigma.error[,4] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "Sigma-normF", error = Sigma.error2[,2] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "Sigma-normF", error = Sigma.error2[,4] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Sigma-normF", error = Sigma.error2[,6] ))
-
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0", estimator = "Sigma-KL", error = Sigma.error[,7] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes", estimator = "Sigma-KL", error = Sigma.error[,8] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM", estimator = "Sigma-KL", error = Sigma.error[,9] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "Sigma-KL", error = Sigma.error2[,7] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "Sigma-KL", error = Sigma.error2[,9] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Sigma-KL", error = Sigma.error2[,9] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Sigma-normF", error = Sigma.error2[,4] ))
 
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "Beta-norm1", error = beta.error2[,1] ))
 datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes0.X", estimator = "Beta-normF", error = beta.error2[,2] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "Beta-norm1", error = beta.error2[,3] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "Bayes.X", estimator = "Beta-normF", error = beta.error2[,4] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Beta-norm1", error = beta.error2[,5] ))
-datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Beta-normF", error = beta.error2[,6] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Beta-norm1", error = beta.error2[,3] ))
+datSimN500 <- rbind(datSimN500, data.frame(n = "n=500", method = "EM.X", estimator = "Beta-normF", error = beta.error2[,4] ))
 
 save(datSimN500, file = paste0(file_directory, "/datSimX_N500.RData"))

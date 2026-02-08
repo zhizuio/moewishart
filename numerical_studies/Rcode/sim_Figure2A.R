@@ -21,9 +21,9 @@ load(paste0(file_directory, "datSimX_N1000.RData"))
 datSim <- rbind(datSimN200, datSimN500, datSimN1000)
 datSim$n <- factor(datSim$n, levels = c("n=200", "n=500", "n=1000"))
 
-datSim <- datSim[datSim$method %in% c("Bayes0", "EM", "Bayes0.X", "EM.X"), ]
+datSim <- datSim[datSim$method %in% c("Bayes", "EM", "Bayes.X", "EM.X"), ]
 datSim$method <- factor(datSim$method)
-datSim$method <- factor(datSim$method, levels = c("Bayes0", "EM", "Bayes0.X", "EM.X"),
+datSim$method <- factor(datSim$method, levels = c("Bayes", "EM", "Bayes.X", "EM.X"),
                         labels = c("Bayes", "EM", "Bayes-MoE", "EM-MoE"))
 
 datSim <- datSim[datSim$estimator %in% c("nu-norm1", "Sigma-normF", "Beta-normF"), ]

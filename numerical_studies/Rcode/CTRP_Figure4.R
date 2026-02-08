@@ -84,37 +84,7 @@ names(anno)[3:7] <- c("Status", "EM", "EM-MoE", "Bayes", "Bayes-MoE")
 rownames(anno) <- anno$master_cpd_id
 anno <- anno[, -c(1:2)]
 
-# Match the labels between different methods
-EM_k1 <- which(anno$`EM` == 1)
-EM_k2 <- which(anno$`EM` == 2)
-anno[EM_k1,"EM"] <- 2
-anno[EM_k2,"EM"] <- 1
-EM_k2 <- which(anno$`EM` == 2)
-EM_k3 <- which(anno$`EM` == 3)
-anno[EM_k2,"EM"] <- 3
-anno[EM_k3,"EM"] <- 2
-EM_k5 <- which(anno$`EM` == 5)
-EM_k8 <- which(anno$`EM` == 8)
-anno[EM_k5,"EM"] <- 8
-anno[EM_k8,"EM"] <- 5
-EM_k6 <- which(anno$`EM` == 6)
-EM_k8 <- which(anno$`EM` == 8)
-anno[EM_k6,"EM"] <- 8
-anno[EM_k8,"EM"] <- 6
-
-EM_MoE_k2 <- which(anno$`EM-MoE` == 2)
-EM_MoE_k5 <- which(anno$`EM-MoE` == 5)
-anno[EM_MoE_k2,"EM-MoE"] <- 5
-anno[EM_MoE_k5,"EM-MoE"] <- 2
-EM_MoE_k4 <- which(anno$`EM-MoE` == 4)
-EM_MoE_k6 <- which(anno$`EM-MoE` == 6)
-anno[EM_MoE_k4,"EM-MoE"] <- 6
-anno[EM_MoE_k6,"EM-MoE"] <- 4
-EM_MoE_k5 <- which(anno$`EM-MoE` == 5)
-EM_MoE_k8 <- which(anno$`EM-MoE` == 8)
-anno[EM_MoE_k5,"EM-MoE"] <- 8
-anno[EM_MoE_k8,"EM-MoE"] <- 5
-
+## normalize AUC data
 y3 <- scale(y2)
 rownames(y3) <- paste0("cell_line", 1:nrow(y3))
 

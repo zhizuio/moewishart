@@ -127,9 +127,6 @@ for (my_K_intial in 2:6) {
     bic <- -2 * loglik + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
     r_ik <- fit$fitEM$tau
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
-    # aic <- round(aic, digits = digits0)
-    # bic <- round(bic, digits = digits0)
-    # icl <- round(icl, digits = digits0)
     c_ik <- t( apply(r_ik, 1, function(xx) as.numeric(xx==max(xx))) )
     icl2 <- bic - 2 * sum(c_ik * log(r_ik), na.rm = TRUE)
     
@@ -141,9 +138,6 @@ for (my_K_intial in 2:6) {
     bic <- -2 * loglik + log(n) * (my_K_intial * (p*(p+1)/2+1) + (my_K_intial-1) * q)
     r_ik <- fit$MoEfitEM$gamma
     icl <- bic - 2 * sum(r_ik * log(r_ik), na.rm = TRUE)
-    # aic <- round(aic, digits = digits0)
-    # bic <- round(bic, digits = digits0)
-    # icl <- round(icl, digits = digits0)
     c_ik <- t( apply(r_ik, 1, function(xx) as.numeric(xx==max(xx))) )
     icl2 <- bic - 2 * sum(c_ik * log(r_ik), na.rm = TRUE)
     

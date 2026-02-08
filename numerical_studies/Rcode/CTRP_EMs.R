@@ -19,7 +19,7 @@ for(i in 1:length(K)) {
     method = "em", #cpp = TRUE,
     K = K[i], 
     niter = 10000, verbose = TRUE,
-    n_restarts = 5, restart_iters = 40, tol = 1e-8
+    n_restarts = 20, restart_iters = 40, tol = 1e-8
   )
 }
 
@@ -69,7 +69,7 @@ load(paste0(filename_save, "CTRP_EM_all.RData"))
 p <- 5 # five drug doses
 q <- 2 # one covariate per component
 n <- length(S_list)
-K <- 2:15 
+K <- 2:11
 dat_Estimates <- data.frame(model = NULL, K = NULL, BIC = NULL, AIC = NULL, 
   nu1 = NULL, nu2 = NULL, sigma1 = NULL, sigma2 = NULL, pi_beta1 = NULL, pi_beta2 = NULL)
 dat_IC <- data.frame(model = NULL, K = NULL, AIC = NULL, BIC = NULL, ICL = NULL)
@@ -80,8 +80,8 @@ digits0 <- 2
 for (i in 1:10) {
 
   # results of mixture model via EM
-  aic <- -2 * sum(fitEM[[i]]$loglik) + 2 * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * 1)
-  bic <- -2 * sum(fitEM[[i]]$loglik) + log(n) * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * q)
+  aic <- -2 * mean(fitEM[[i]]$loglik) + 2 * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * 1)
+  bic <- -2 * mean(fitEM[[i]]$loglik) + log(n) * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * q)
   nu12 <- round(fitEM[[i]]$nu, digits = digits0)
   sigma12 <- round(unlist(lapply(fitEM[[i]]$Sigma, function(xx) xx[1])), digits = digits0)
   pi12 <- round(fitEM[[i]]$pi, digits = digits0)
@@ -99,8 +99,9 @@ for (i in 1:10) {
   names(drug_class)[ncol(drug_class)] <- paste0("EM_K", K[i])
 
   # results of MoE model via EM
-  aic <- -2 * sum(fitEM_MoE[[i]]$loglik) + 2 * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
-  bic <- -2 * sum(fitEM_MoE[[i]]$loglik) + log(n) * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
+  loglik <- fitEM_MoE[[i]]$loglik[length(fitEM_MoE[[i]]$loglik)]
+  aic <- -2 * loglik + 2 * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
+  bic <- -2 * loglik + log(n) * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
   nu12 <- round(fitEM_MoE[[i]]$nu, digits = digits0)
   sigma12 <- round(unlist(lapply(fitEM_MoE[[i]]$Sigma, function(xx) xx[1])), digits = digits0)
   beta12 <- round(fitEM_MoE[[i]]$Beta[1, ], digits = digits0)
