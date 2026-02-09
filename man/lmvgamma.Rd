@@ -32,9 +32,10 @@ Constraints: (i) \eqn{p \in \{1,2,\dots\}} (positive integer), and
 }
 \examples{
 
-# simulate data
-set.seed(123)
-n <- 200 # subjects
-p <- 2
+# Dimension
+p <- 3
+# Evaluate log multivariate gamma at a = nu/2
+nu <- p + 5
+lmvgamma(a = nu/2, p = p)
 
 }

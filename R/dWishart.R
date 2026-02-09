@@ -46,10 +46,15 @@
 #'
 #' @examples
 #'
-#' # simulate data
 #' set.seed(123)
-#' n <- 200 # subjects
-#' p <- 2
+#' p <- 3
+#' # Construct an SPD Sigma
+#' A <- matrix(rnorm(p*p), p, p)
+#' Sigma <- crossprod(A) + diag(p) * 0.5
+#' # Draw a Wishart matrix using base stats::rWishart()
+#' W <- drop(rWishart(1, df = p + 5, Sigma = Sigma))
+#' # Evaluate log-density at W
+#' dWishart(W, nu = p + 5, Sigma = Sigma, logarithm = TRUE)
 #'
 #' @export
 dWishart <- function(S, nu, Sigma, detS_val = NULL, logarithm = TRUE) {

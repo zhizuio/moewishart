@@ -1,4 +1,5 @@
 ^test_build.R$
+^test_build_README.R$
 ^results/
 ^numerical_studies/
 ^\.github$

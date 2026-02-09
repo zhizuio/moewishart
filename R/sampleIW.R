@@ -45,10 +45,16 @@
 #'
 #' @examples
 #'
-#' # simulate data
 #' set.seed(123)
-#' n <- 200 # subjects
-#' p <- 2
+#' p <- 3
+#' # Construct an SPD scale matrix Psi
+#' A <- matrix(rnorm(p*p), p, p)
+#' Psi <- crossprod(A) + diag(p) * 0.5
+#' Psi_inv <- solve(Psi)
+#'
+#' # Draw one inverse-Wishart sample
+#' S <- sampleIW(nu = p + 5, Psi_inv = Psi_inv)
+#' S
 #'
 #' @export
 sampleIW <- function(nu, Psi_inv) {

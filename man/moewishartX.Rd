@@ -172,5 +172,28 @@ added for stability.
 set.seed(123)
 n <- 200 # subjects
 p <- 10
+# True gating coefficients (last column zero)
+set.seed(123) 
+Xq <- 3; K <- 3
+betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
+betas[, K] <- 0
+dat <- simData(n, p, 
+  Xq = 3, K = 3, betas = betas,
+  pis = c(0.35, 0.40, 0.25),
+  nus = c(8, 12, 3)
+)
+
+set.seed(123)
+fit <- moewishartX(
+  dat$S, X = cbind(1, dat$X), K = 3, 
+  mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
+  mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
+  niter = 1000, burnin = 500
+)
+
+burnin <- 500
+# Posterior means for degrees of freedom of Wishart distributions: 
+nu_mcmc <- fit$nu[-c(1:burnin), ]
+colMeans(nu_mcmc) 
 
 }

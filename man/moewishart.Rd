@@ -172,5 +172,21 @@ added internally for stability, and
 set.seed(123)
 n <- 200 # subjects
 p <- 10
+dat <- simData(n, p, K = 3, 
+  pis = c(0.35, 0.40, 0.25),
+  nus = c(8, 12, 3)
+)
+
+set.seed(123)
+fit <- moewishart(
+  dat$S, K = 3, 
+  mh_sigma = 0.2,
+  niter = 1000, burnin = 500
+)
+
+burnin <- 500
+# Posterior means for degrees of freedom of Wishart distributions: 
+nu_mcmc <- fit$nu[-c(1:burnin), ]
+colMeans(nu_mcmc) 
 
 }

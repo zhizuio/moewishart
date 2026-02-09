@@ -90,10 +90,15 @@
 #'
 #' @examples
 #'
-#' # simulate data
+#' # simulate data from mixture model (no covariates)
 #' set.seed(123)
 #' n <- 200 # subjects
-#' p <- 2
+#' p <- 10
+#' dat <- simData(n, p, K = 3, 
+#'   pis = c(0.35, 0.40, 0.25),
+#'   nus = c(8, 12, 3)
+#' )
+#' str(dat)
 #'
 #' @export
 simData <- function(n = 200, p = 2,

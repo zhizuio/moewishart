@@ -32,10 +32,10 @@
 #'
 #' @examples
 #'
-#' # simulate data
 #' set.seed(123)
-#' n <- 200 # subjects
-#' p <- 2
+#' # 3-dimensional Dirichlet with asymmetric concentration
+#' alpha <- c(2, 5, 3)
+#' rdirichlet(5, alpha)
 #'
 #' @export
 rdirichlet <- function(n, alpha) {
