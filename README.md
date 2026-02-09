@@ -37,9 +37,9 @@ Data simulation from a MoE-Wishart model:
 - Sample size $n = 200$
 - Dimension of the Wishart distribution $p = 2$
 - Number of latent components $K = 3$
-- $q=3$ gating covariates $\mathbf X = \{x_{ij}\} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$, $i=1,...,n$, $j=1,...,q$
+- $q=3$ gating covariates $\mathbf X = (x_{ij})_{ij} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$, $i=1,...,n$, $j=1,...,q$
 - Fixed covariate effects $\boldsymbol\beta=[\boldsymbol\beta_1,...,\boldsymbol\beta_K] \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
-- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_l)$, $k=1,...,K$
+- Probabilities of subpopulations $\boldsymbol\pi = (\pi_{ik})_{ik} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_l)$, $k=1,...,K$
 - Degrees of freedom $\boldsymbol\nu = (\nu_1,\nu_2,\nu_3) = (8, 12, 3)$
 - Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3 \in \mathbb R^{p\times p}$
 - Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
