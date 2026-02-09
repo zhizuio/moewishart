@@ -39,8 +39,8 @@
 #'   \item Mixture-of-experts (covariates, \code{Xq > 0}):
 #'         Let \eqn{X_i \in \mathbb{R}^{Xq}}. The mixing weights are
 #'         \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} given by softmax regression
-#'         \eqn{\pi_{ik} = \exp(X_i^\top \beta_k) / \sum_{j=1}^K
-#'         \exp(X_i^\top \beta_j)}. Labels \eqn{z_i} are drawn from
+#'         \eqn{\pi_{ik} = \exp(X_i^\top B_k) / \sum_{j=1}^K
+#'         \exp(X_i^\top B_j)}. Labels \eqn{z_i} are drawn from
 #'         \eqn{\mathrm{Categorical}(\pi_i)} and
 #'         \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)}.
 #' }

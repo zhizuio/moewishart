@@ -38,8 +38,8 @@ Data simulation from a MoE-Wishart model:
 - Dimension of the Wishart distribution $p = 2$
 - Number of latent components $K = 3$
 - $q$ covariates $\mathbf X = \{x_{ij}\} \in \mathbb R^{n\times q}$, $x_{ij}\sim\text{N}(0,1)$
-- Fixed covariate effects $\boldsymbol\beta \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
-- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_k)$
+- Fixed covariate effects $\boldsymbolB \in \mathbb R^{q\times K}$, with $\boldsymbolB_{K}=0$
+- Probabilities of subpopulations $\boldsymbol\pi = \{\pi_{ik}\} \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbolB_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbolB_k)$
 - Degrees of freedom $\boldsymbol\nu = (8, 12, 3)$
 - Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3$
 - Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$

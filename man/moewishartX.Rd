@@ -71,9 +71,9 @@ for MH updates on \eqn{\log(\nu_k)} (Bayesian, when estimating
 \eqn{\nu}).}
 
 \item{mh_beta}{Numeric scalar or length-\eqn{K-1} vector. Proposal sd
-for MH updates of the free \eqn{\Beta} columns (Bayesian).}
+for MH updates of the free \eqn{B} columns (Bayesian).}
 
-\item{sigma_beta}{Numeric. Prior sd of the Gaussian prior on \eqn{\Beta}
+\item{sigma_beta}{Numeric. Prior sd of the Gaussian prior on \eqn{B}
 (Bayesian).}
 
 \item{init}{Optional list with fields for EM initialization, e.g.,
@@ -93,7 +93,7 @@ A list whose fields depend on \code{method}:
   \item For \code{method = "bayes"}:
     \itemize{
       \item \code{Beta_samples}: array (\code{nsave} x \code{q} x
-            \code{K}), saved draws of \eqn{\Beta} (last column zero).
+            \code{K}), saved draws of \eqn{B} (last column zero).
       \item \code{nu_samples}: matrix (\code{nsave} x \code{K}), draws
             of \eqn{\nu_k}.
       \item \code{Sigma_samples}: list of length \code{nsave}; each
@@ -143,8 +143,8 @@ MoE-Wishart Model:
         Mixing weights \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} follow a
         softmax regression:
         \eqn{\pi_{ik} = \exp(\eta_{ik})/\sum_{j=1}^K \exp(\eta_{ij})},
-        where \eqn{\eta_i = X_i^\top \Beta}, \eqn{\Beta} is
-        \eqn{q \times K}. Identifiability: last column of \eqn{\Beta}
+        where \eqn{\eta_i = X_i^\top B}, \eqn{B} is
+        \eqn{q \times K}. Identifiability: last column of \eqn{B}
         is fixed to zero.
 }
 
@@ -152,12 +152,12 @@ Algorithms:
 \enumerate{
   \item Bayesian (\code{method = "bayes"}): Metropolis-within-Gibbs
         sampler for \eqn{z}, \eqn{\Sigma_k}, optional \eqn{\nu_k}, and
-        \eqn{\Beta}. Gaussian priors on \eqn{\Beta} with sd
+        \eqn{B}. Gaussian priors on \eqn{B} with sd
         \code{sigma_beta}. Proposals use \code{mh_sigma} for
-        \eqn{\log(\nu_k)} and \code{mh_beta} for \eqn{\Beta}.
+        \eqn{\log(\nu_k)} and \code{mh_beta} for \eqn{B}.
   \item EM (\code{method = "em"}): E-step responsibilities using
         Wishart log-densities and softmax gating. M-step updates
-        \eqn{\Sigma_k}, optional \eqn{\nu_k}, and \eqn{\Beta} via
+        \eqn{\Sigma_k}, optional \eqn{\nu_k}, and \eqn{B} via
         weighted multinomial logistic regression (BFGS).
 }
 
