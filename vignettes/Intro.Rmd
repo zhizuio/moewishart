@@ -20,7 +20,7 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 
 # moewishart: Mixture-of-Experts Wishart models for covariance data
 
-This R-package `moewishart` provides miximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
+This R-package `moewishart` provides maximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
 It contains 4 different algorithms for 2 model:
 
 - mixture model of Wishart distributions:
