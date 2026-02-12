@@ -1,125 +1,127 @@
-#' @title EM/Bayesian estimation for Wishart mixture model
+#' @title EM/Bayesian estimation for Wishart MoE model
 #'
 #' @description
-#' Fit finite mixtures of Wishart-distributed SPD matrices using either a
-#' Bayesian sampler or the EM algorithm. The input \code{S_list} is a list
-#' of \eqn{p \times p} SPD matrices. Under component \eqn{k},
-#' \eqn{S_i \mid z_i=k \sim W_p(\nu_k, \Sigma_k)} with degrees of freedom
-#' \eqn{\nu_k} and SPD scale matrix \eqn{\Sigma_k}. Mixture weights
-#' \eqn{\pi_k} sum to \eqn{1}.
+#' Fit a mixture-of-experts model for symmetric positive-definite (SPD)
+#' matrices with covariate-dependent mixing proportions (gating network).
+#' Components are Wishart-distributed. Supports Bayesian sampling and
+#' EM-based maximum-likelihood estimation.
 #'
-#' @name mixturewishart
+#' @name moewishart
 #'
 #' @importFrom utils combn
-#' @importFrom stats kmeans
+#' @importFrom stats optim
 #'
 #' @param S_list List of length \eqn{n} of SPD matrices, each \eqn{p \times p}.
-#'   These are the observed matrices modeled by a mixture of Wisharts.
-#' @param K Integer. Number of mixture components.
+#'   These are the observed responses modeled by the MoE.
+#' @param X Numeric matrix \eqn{n \times q} of covariates for the gating
+#'   network. Include an intercept column if desired.
+#' @param K Integer. Number of mixture components (experts).
 #' @param niter Integer. Total iterations. Bayesian mode: total MCMC
-#'   iterations (including burn-in). EM mode: maximum EM iterations
-#'   (alias to \code{maxiter}).
+#'   iterations (including burn-in). EM mode: maximum EM iterations.
 #' @param burnin Integer. Number of burn-in iterations (Bayesian mode).
-#' @param method Character; one of \code{c("bayes","em")}. Selects sampler
-#'   or optimizer.
+#' @param method Character; one of \code{c("bayes", "em")}. Selects
+#'   sampler or optimizer.
 #' @param thin Integer. Thinning interval for saving draws (Bayesian).
-#' @param alpha Numeric vector length \eqn{K} (Dirichlet prior on
-#'   \eqn{\pi}) or \code{NULL} to default to \code{rep(1, K)} (Bayesian).
 #' @param nu0 Numeric. Inverse-Wishart prior df for \eqn{\Sigma_k}
-#'   (Bayesian). Default: \eqn{p + 2}.
+#'   (Bayesian). Default: \eqn{p + 2} if \code{NULL}.
 #' @param Psi0 Numeric \eqn{p \times p} SPD matrix. Inverse-Wishart prior
-#'   scale for \eqn{\Sigma_k} (Bayesian). Default: \code{diag(p)}.
-#' @param init_pi Optional numeric vector length \eqn{K} summing to
-#'   \eqn{1}. EM initialization for mixture weights. If \code{NULL},
-#'   random or data-driven initialization is used.
-#' @param init_nu Optional numeric vector length \eqn{K} of initial
-#'   degrees of freedom. Used in both modes.
-#' @param init_Sigma Optional list of \eqn{K} SPD matrices (each
-#'   \eqn{p \times p}). EM initialization for \eqn{\Sigma_k}.
-#' @param marginal.z Logical. If \code{TRUE}, integrates out \eqn{\pi}
-#'   when sampling \eqn{z} (collapsed step) in Bayesian mode. If
-#'   \code{FALSE}, samples \eqn{z} conditional on current \eqn{\pi}.
-#' @param estimate_nu Logical. If \code{TRUE}, estimate/update
-#'   \eqn{\nu_k} (MH in Bayesian mode; Newton/EM in EM). If
-#'   \code{FALSE}, \eqn{\nu_k} are fixed.
-#' @param nu_prior_a Numeric. Prior hyperparameter \eqn{a} for
-#'   \eqn{\nu_k} (Bayesian), used when \code{estimate_nu = TRUE}.
-#' @param nu_prior_b Numeric. Prior hyperparameter \eqn{b} for
-#'   \eqn{\nu_k} (Bayesian), used when \code{estimate_nu = TRUE}.
+#'   scale for \eqn{\Sigma_k} (Bayesian). Default: \code{diag(p)} if
+#'   \code{NULL}.
+#' @param init_nu Optional numeric vector length \eqn{K} of initial dfs
+#'   \eqn{\nu_k}. Used for initialization.
+#' @param estimate_nu Logical. If \code{TRUE}, estimate \eqn{\nu_k}
+#'   (MH in Bayesian; Newton/EM in EM). If \code{FALSE}, keep \eqn{\nu_k}
+#'   fixed at \code{init_nu}.
+#' @param nu_prior_a Numeric. Prior hyperparameter \eqn{a} for \eqn{\nu_k}
+#'   (Bayesian), used when \code{estimate_nu = TRUE}.
+#' @param nu_prior_b Numeric. Prior hyperparameter \eqn{b} for \eqn{\nu_k}
+#'   (Bayesian), used when \code{estimate_nu = TRUE}.
 #' @param mh_sigma Numeric scalar or length-\eqn{K} vector. Proposal sd
 #'   for MH updates on \eqn{\log(\nu_k)} (Bayesian, when estimating
 #'   \eqn{\nu}).
-#' @param n_restarts Integer. Number of random restarts for EM. Ignored
-#'   in Bayesian mode.
-#' @param restart_iters Integer. Number of short EM iterations per
-#'   restart used to select a good initialization. Ignored in Bayesian
-#'   mode.
+#' @param mh_beta Numeric scalar or length-\eqn{K-1} vector. Proposal sd
+#'   for MH updates of the free \eqn{B} columns (Bayesian).
+#' @param sigma_beta Numeric. Prior sd of the Gaussian prior on \eqn{B}
+#'   (Bayesian).
+#' @param init Optional list with fields for EM initialization, e.g.,
+#'   \code{beta}, \code{Sigma}, \code{nu}. See return structure.
 #' @param tol Numeric. Convergence tolerance on absolute change of
-#'   log-likelihood (EM), also used internally elsewhere.
+#'   log-likelihood (EM), also used internally.
+#' @param ridge Numeric. Small diagonal ridge added to \eqn{\Sigma_k}
+#'   updates in EM for numerical stability.
 #' @param verbose Logical. If \code{TRUE}, print progress information.
 #'
 #'
 #' @details
-#' Mixture mixture model:
-#'  \eqn{p(S_i) = \sum_{k=1}^K \pi_k \, f_W(S_i \mid \nu_k, \Sigma_k)}.
+#' MoE-Wishart Model:
+#' \itemize{
+#'   \item Observation: \eqn{S_i} is a \eqn{p \times p} SPD matrix. Given
+#'         allocation \eqn{z_i=k}, \eqn{S_i \mid z_i \sim W_p(\nu_k,
+#'         \Sigma_k)} with df \eqn{\nu_k} and scale \eqn{\Sigma_k}.
+#'   \item Gating (MoE): Let \eqn{X_i} be \eqn{q}-dimensional covariates.
+#'         Mixing weights \eqn{\pi_{ik} = \Pr(z_i=k \mid X_i)} follow a
+#'         softmax regression:
+#'         \eqn{\pi_{ik} = \exp(\eta_{ik})/\sum_{j=1}^K \exp(\eta_{ij})},
+#'         where \eqn{\eta_i = X_i^\top B}, \eqn{B} is
+#'         \eqn{q \times K}. Identifiability: last column of \eqn{B}
+#'         is fixed to zero.
+#' }
 #'
 #' Algorithms:
 #' \enumerate{
-#'   \item \code{method = "bayes"}: Samples latent labels \eqn{z}, weights
-#'         \eqn{\pi}, component scales \eqn{\Sigma_k}, and optionally
-#'         \eqn{\nu_k}. Uses a Dirichlet prior for \eqn{\pi}, inverse-
-#'         Wishart prior for \eqn{\Sigma_k}, and a prior on \eqn{\nu_k}
-#'         when \code{estimate_nu = TRUE}. Degrees-of-freedom are updated
-#'         via MH on \eqn{\log(\nu_k)} with proposal sd \code{mh_sigma}.
-#'         Can integrate out \eqn{\pi} when sampling \eqn{z} if
-#'         \code{marginal.z = TRUE}. 
-#'   \item \code{method = "em"}: Maximizes the observed-data log-
-#'         likelihood via EM. The E-step computes responsibilities via
-#'         Wishart log-densities. The M-step updates \eqn{\pi_k} and
-#'         \eqn{\Sigma_k}; optionally updates \eqn{\nu_k} when
-#'         \code{estimate_nu = TRUE}. Supports multiple random restarts.
+#'   \item Bayesian (\code{method = "bayes"}): Metropolis-within-Gibbs
+#'         sampler for \eqn{z}, \eqn{\Sigma_k}, optional \eqn{\nu_k}, and
+#'         \eqn{B}. Gaussian priors on \eqn{B} with sd
+#'         \code{sigma_beta}. Proposals use \code{mh_sigma} for
+#'         \eqn{\log(\nu_k)} and \code{mh_beta} for \eqn{B}.
+#'   \item EM (\code{method = "em"}): E-step responsibilities using
+#'         Wishart log-densities and softmax gating. M-step updates
+#'         \eqn{\Sigma_k}, optional \eqn{\nu_k}, and \eqn{B} via
+#'         weighted multinomial logistic regression (BFGS).
 #' }
 #'
-#' Note that 
-#' (i) All matrices in \code{S_list} must be SPD. Small ridge terms may be 
-#' added internally for stability, and 
-#' (ii) Multiple EM restarts are recommended for robustness on difficult datasets.
-#'
-#'
-#' @return A list whose structure depends on \code{method}:
+#' Note that:
+#' (i) include an intercept column in \code{X}; none is added by default, and
+#' (ii) all \code{S_list} elements must be SPD. A small \code{ridge} may be 
+#' added for stability.
+#' 
+#' 
+#' @return A list whose fields depend on \code{method}:
 #' \itemize{
 #'   \item For \code{method = "bayes"}:
 #'     \itemize{
+#'       \item \code{Beta_samples}: array (\code{nsave} x \code{q} x
+#'             \code{K}), saved draws of \eqn{B} (last column zero).
+#'       \item \code{nu_samples}: matrix (\code{nsave} x \code{K}), draws
+#'             of \eqn{\nu_k}.
+#'       \item \code{Sigma_samples}: list of length \code{nsave}; each
+#'             element is an array (\eqn{p \times p \times K}) of
+#'             \eqn{\Sigma_k} draws.
+#'       \item \code{z_samples}: matrix (\code{nsave} x \code{n}), draws
+#'             of allocations.
 #'       \item \code{pi_ik}: array (\code{nsave} x \code{n} x \code{K}),
-#'             saved per-observation weights.
-#'       \item \code{pi}: matrix (\code{nsave} x \code{K}), saved mixture
-#'             proportions.
-#'       \item \code{nu}: matrix (\code{nsave} x \code{K}), saved degrees-
-#'             of-freedom.
-#'       \item \code{Sigma}: list of length \code{nsave}; each is an
-#'             array (\eqn{p \times p \times K}) of \eqn{\Sigma_k} draws.
-#'       \item \code{z}: matrix (\code{nsave} x \code{n}), saved
-#'             allocations.
-#'       \item \code{sigma_posterior_mean}: array (\eqn{p \times p \times
-#'             K}), posterior mean of \eqn{\Sigma_k}.
-#'       \item \code{loglik}: numeric vector (length \code{niter}), log-
-#'             likelihood trace.
+#'             per-observation gating probabilities.
+#'       \item \code{pi_mean}: matrix (\code{n} x \code{K}), posterior
+#'             mean of gating probabilities.
+#'       \item \code{loglik}: numeric vector (length \code{niter}),
+#'             log-likelihood trace.
 #'       \item \code{loglik_individual}: matrix (\code{niter} x
 #'             \code{n}), per-observation log-likelihood.
 #'     }
 #'   \item For \code{method = "em"}:
 #'     \itemize{
-#'       \item \code{pi}: numeric vector length \eqn{K}, mixture
-#'             proportions.
+#'       \item \code{K, p, q, n}: problem dimensions.
+#'       \item \code{Beta}: matrix (\eqn{q \times K}), gating coefficients
+#'             with last column zero (reference class).
 #'       \item \code{Sigma}: list length \code{K}, each a \eqn{p \times p}
-#'             SPD matrix.
-#'       \item \code{nu}: numeric vector length \code{K}, degrees-of-
+#'             SPD matrix (scale).
+#'       \item \code{nu}: numeric vector length \code{K}, degrees of
 #'             freedom.
-#'       \item \code{tau}: matrix (\eqn{n \times K}), responsibilities.
-#'       \item \code{loglik}: numeric vector, log-likelihood per EM
+#'       \item \code{gamma}: matrix (\eqn{n \times K}), final
+#'             responsibilities.
+#'       \item \code{loglik}: numeric vector, log-likelihood by EM
 #'             iteration.
-#'       \item \code{iterations}: integer, number of EM iterations
-#'             performed.
+#'       \item \code{iter}: integer, number of EM iterations performed.
 #'     }
 #' }
 #'
@@ -128,17 +130,24 @@
 #'
 #' # simulate data
 #' set.seed(123)
-#' n <- 500 # subjects
-#' p <- 2
-#' dat <- simData(n, p, K = 3, 
+#' n <- 200 # subjects
+#' p <- 10
+#' # True gating coefficients (last column zero)
+#' set.seed(123) 
+#' Xq <- 3; K <- 3
+#' betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
+#' betas[, K] <- 0
+#' dat <- simData(n, p, 
+#'   Xq = 3, K = 3, betas = betas,
 #'   pis = c(0.35, 0.40, 0.25),
-#'   nus = c(8, 16, 3)
+#'   nus = c(8, 12, 3)
 #' )
 #' 
 #' set.seed(123)
-#' fit <- mixturewishart(
-#'   dat$S, K = 3, 
-#'   mh_sigma = 0.2,
+#' fit <- moewishart(
+#'   dat$S, X = cbind(1, dat$X), K = 3, 
+#'   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
+#'   mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
 #'   niter = 1000, burnin = 500
 #' )
 #' 
@@ -148,237 +157,226 @@
 #' colMeans(nu_mcmc) 
 #'
 #' @export
-mixturewishart <- function(S_list,
-                       K,
-                       niter = 3000,
-                       burnin = 1000,
-                       method = "bayes",
-                       thin = 1,
-                       alpha = NULL,
-                       nu0 = NULL,
-                       Psi0 = NULL,
-                       init_pi = NULL,
-                       init_nu = NULL,
-                       init_Sigma = NULL,
-                       marginal.z = TRUE,
-                       estimate_nu = TRUE,
-                       nu_prior_a = 2,
-                       nu_prior_b = 0.1,
-                       mh_sigma = 1,
-                       n_restarts = 3,
-                       restart_iters = 20, 
-                       tol = 1e-6,
-                       verbose = TRUE) {
+moewishart <- function(S_list,
+                        X, # n x q matrix of covariates for gating
+                        K,
+                        niter = 3000,
+                        burnin = 1000,
+                        method = "bayes",
+                        thin = 1,
+                        nu0 = NULL,
+                        Psi0 = NULL,
+                        init_nu = NULL,
+                        estimate_nu = TRUE,
+                        nu_prior_a = 2, nu_prior_b = 0.1,
+                        mh_sigma = 0.1,
+                        mh_beta = 0.05, # MH proposal sd for gating coeffs
+                        sigma_beta = 10, # Gaussian prior sd for beta
+                        init = NULL,
+                        tol = 1e-6,
+                        ridge = 1e-8,
+                        verbose = TRUE) {
+  # Mixture-of-Experts Gibbs sampler for Wishart clusters
+  #   S_list: list of n SPD matrices (p x p)
+  #   X      : n x q covariate matrix for gating network (include intercept if desired)
+  #   K      : number of experts/clusters
+  #
+  # Returns samples for Sigma_k, nu_k, z, and gating coefficients Beta
+
+
   if (!method %in% c("bayes", "em")) {
     stop("Argument 'method' must be either 'bayes' or 'em'!")
   }
 
   # TODO: remove redundant code for the common calculations between full Bayesian and EM algorithm
   if (method == "bayes") {
-    
-    # -- 1. Pre-processing and Pre-allocation --
     n <- length(S_list)
     p <- nrow(S_list[[1]])
+    q <- ncol(X)
+    if (n != nrow(X)) stop("Number of rows in X must equal length(S_list).")
     
     if (length(mh_sigma) != K && length(mh_sigma) != 1) {
       stop("Argument 'mh_sigma' must have length 1 or K!")
     } else if(length(mh_sigma) == 1) {
       mh_sigma <- rep(mh_sigma, K)
     }
-    
-    if (!is.null(alpha)) {
-      if (length(alpha) != K) {
-        warning("Length of alpha (", length(alpha), ") != K (", K, "). Recycling/triming alpha to length K.")
-        alpha <- rep(alpha, length.out = K)
-      }
-    } else {
-      alpha <- rep(1, K)
+    if (length(mh_beta) != K-1 && length(mh_beta) != 1) {
+      stop("Argument 'mh_beta' must have length 1 or K-1!")
+    } else if(length(mh_beta) == 1) {
+      mh_beta <- rep(mh_beta, K-1)
     }
     
-    # Defaults
+    # Priors / defaults
     if (is.null(nu0)) nu0 <- p + 2
     if (is.null(Psi0)) Psi0 <- diag(p)
     if (is.null(init_nu)) init_nu <- rep(p + 2, K)
-    
-    # OPTIMIZATION: Vectorize Data
-    # Flatten each p x p matrix into a row of length p^2
-    # This allows fast summation and fast trace calculation
-    S_mat <- t(sapply(S_list, as.vector)) # Dimension: n x (p*p)
-    
-    # OPTIMIZATION: Precompute log determinants of data
-    # This part of the density never changes
-    log_det_S <- sapply(S_list, function(x) determinant(x, logarithm = TRUE)$modulus)
-    
-    # Initialize Parameters
-    # Use vectorized data for kmeans
+
+    # Vectorize S for fast trace computations
+    S_mat <- t(sapply(S_list, as.vector)) # n x p^2
+    log_det_S <- sapply(S_list, function(x) as.numeric(determinant(x, logarithm = TRUE)$modulus))
+
+    # initialize z (kmeans on vectorized matrices)
     km <- kmeans(S_mat, centers = K, nstart = 5)
     z <- km$cluster
-    
-    if (is.null(init_pi)) {
-      pi_k <- table(factor(z, levels = 1:K)) / n
-    } else {
-      if (length(init_pi) != K || sum(init_pi) != 1) {
-        stop("Please specify correct 'init_pi'!")
-      }
-      pi_k <- init_pi
-    }
+
+    # initialize cluster params
     Sigma_k <- array(0, c(p, p, K))
     nu_k <- init_nu
-    
-    # Initial Sigma
     for (k in 1:K) {
       idx <- which(z == k)
       if (length(idx) == 0) {
-        Sigma_k[, , k] <- Psi0 / (nu0 - p - 1)
+        Sigma_k[, , k] <- Psi0 / (nu0 - p - 1 + 1e-8)
       } else {
-        # OPTIMIZATION: Fast matrix sum using colSums on vectorized data
         S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
         S_sum <- matrix(S_sum_vec, p, p)
         Sigma_k[, , k] <- (Psi0 + S_sum) / (nu0 + length(idx) * nu_k[k] - p - 1)
       }
     }
-    
+
+    # Initialize gating coefficients Beta: q x (K-1), last column zero for identifiability
+    Beta <- matrix(0, nrow = q, ncol = K) # we keep full K but enforce Beta[,K] = 0
+    Beta[, 1:(K - 1)] <- matrix(rnorm(q * (K - 1), 0, 0.1), nrow = q, ncol = K - 1)
+    Beta[, K] <- 0
+
+    pi_ik <- compute_pi_ik(X, Beta) # n x K
+
     # Storage
     ##nsave <- floor((niter - burnin) / thin)
     nsave <- floor(niter / thin)
     if (nsave < 1) nsave <- 1
-    out_pi_ik <- array(NA, dim = c(nsave, n, K))
-    out_pi <- matrix(NA, nrow = nsave, ncol = K)
+    out_beta <- array(NA, dim = c(nsave, q, K)) # store Beta at saves
     out_nu <- matrix(NA, nrow = nsave, ncol = K)
     out_Sigma <- vector("list", nsave)
     out_z <- matrix(NA, nrow = nsave, ncol = n)
+    out_pi_ik <- array(NA, dim = c(nsave, n, K))
+    out_pi_mean <- array(0, dim = c(n, K)) # accumulate posterior mean of pi_ik
     logliks <- numeric(niter)
     logliks_individual <- matrix(NA, nrow = niter, ncol = n)
     iter_save <- 0
-    
-    # Pre-allocate reusable vectors
+
+    # pre-alloc
     logpost <- matrix(0, n, K)
-    n_k <- as.numeric(table(factor(z, levels = 1:K)))
-    acc_count <- numeric(K) # record acceptance counts of MH for nu
+    acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
+    acc_count_beta <- c(numeric(K - 1), NA) # record acceptance counts of MH for beta
+    free_idx_cols <- 1:(K-1)
     
-    # Start Timer
+    # Spike-and-slab indicators for Beta (q x (K-1))
+    #pi_gamma <- 0.5
+    #Gamma <- matrix(rbinom(q*(K-1), 1, pi_gamma), nrow = q, ncol = K-1)
+    #Gama_samples =  array(NA, dim = c(nsave, q, K-1))
+    
     # start_time <- Sys.time()
-    
     for (iter in 1:niter) {
-      # --- Step 1: Update Labels z (The Heavy Lifting) ---
-      
+      # --- Step 1: compute log-likelihood parts per cluster (vectorized) ---
       for (k in 1:K) {
-        # OPTIMIZATION: Invert Sigma ONLY ONCE per cluster
         Sig <- Sigma_k[, , k]
-        
-        # Cholesky is faster and more stable for determinant/inverse
-        chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
-        log_det_Sig <- 2 * sum(log(diag(chol_Sig))) # log|Sigma|
-        Sig_inv <- chol2inv(chol_Sig) # Sigma^-1
-        
-        # OPTIMIZATION: Vectorized Trace calculation
-        # Tr(Sigma^-1 * S_i) is the dot product of vec(Sigma^-1) and vec(S_i)
-        # We calculate this for ALL i at once via matrix multiplication
-        # S_mat is (n x p^2), as.vector(Sig_inv) is (p^2 x 1) -> Result (n x 1)
-        tr_val <- S_mat %*% as.vector(Sig_inv)
-        
-        # Calculate log-density for all n points
-        # term1: (nu - p - 1)/2 * log|S|
-        # term2: -0.5 * tr(Sig^-1 S)
-        # term3: Normalizing constants involving nu and log|Sig|
-        
+        chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-8, p)))
+        log_det_Sig <- 2 * sum(log(diag(chol_Sig)))
+        Sig_inv <- chol2inv(chol_Sig)
+        tr_val <- S_mat %*% as.vector(Sig_inv) # n x 1
         nu <- nu_k[k]
-        
         term1 <- (nu - p - 1) / 2 * log_det_S
         term2 <- -0.5 * tr_val
         term3 <- -(nu * p / 2) * log(2) - (nu / 2) * log_det_Sig
         term4 <- -lmvgamma(nu / 2, p)
-        
-        # logpost[, k] <- log(pi_k[k] + 1e-300) + term1 + term2 + term3 + term4
-        logpost[, k] <- term1 + term2 + term3 + term4
-        if (marginal.z) {
-          logpost[, k] <- logpost[, k] + log(alpha[k] + n_k[k] - as.numeric(z == k) + 1e-300)
-        } else {
-          logpost[, k] <- logpost[, k] + log(pi_k[k] + 1e-300)
-        }
-        
+        # log posterior (pointwise) = log pi_ik + likelihood terms
+        logpost[, k] <- log(pi_ik[, k] + 1e-300) + term1 + term2 + term3 + term4
       }
-      
-      # Sample z
-      # Vectorized sampling is hard in base R, looping sample.int is okay
-      # but we can optimize the probability normalization
-      # Using pure R loop for sampling is usually fast enough compared to the math above
-      pi_ik <- matrix(NA, nrow = n, ncol = K)
+
+      # --- Step 2: sample z (categorical per i using pi_ik and likelihood) ---
       for (i in 1:n) {
         lp <- logpost[i, ]
         lp <- lp - max(lp)
         prob <- exp(lp)
+        prob <- prob / sum(prob)
         z[i] <- sample.int(K, 1, prob = prob)
-        pi_ik[i, ] <- prob / sum(prob)
       }
       
-      # --- Step 2: Update Weights pi ---
-      n_k <- as.numeric(table(factor(z, levels = 1:K)))
-      pi_k <- as.numeric(rdirichlet(1, alpha + n_k))
-      # pi_k <- c(0.35, 0.40, 0.25)
+      # --- Step 3: update gating coefficients Beta via MH ---
+      # We'll update the (K-1) free columns jointly (size q*(K-1)).
+      # Flatten current free parameters
       
-      # --- Step 3: Update Sigma_k ---
-      for (k in 1:K) {
-        idx <- which(z == k)
-        nk <- length(idx)
-        
-        if (nk == 0) {
-          Sigma_k[, , k] <- sampleIW(nu0, solve(Psi0))
-        } else {
-          # OPTIMIZATION: Fast Sum
-          S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
-          S_sum <- matrix(S_sum_vec, p, p)
-          
-          nu_post <- nu0 + nk * nu_k[k]
-          Psi_post <- solve(Psi0) + S_sum
-          
-          # Invert Psi_post once for sampling
-          # Use tryCatch for numerical stability
-          Psi_post_inv <- tryCatch(solve(Psi_post), error = function(e) solve(Psi_post + diag(1e-6, p)))
-          
-          # browser() ##TODO: check bugs in updating Sigma_k
-          Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
-          # if (k == 1 )
-          #   Sigma_k[, , k] <- matrix(c(0.5,0.2,0.2,0.7), nrow = 2)
-          # if (k == 2 )
-          #   Sigma_k[, , k] <- matrix(c(2,0.6,0.6,1.5), nrow = 2)
-          # if (k == 3 )
-          #   Sigma_k[, , k] <- matrix(c(4,0.2,0.2,3), nrow = 2)
+      #free_idx_cols <- 1:(K - 1)
+      
+      # Update Beta columnwise
+      for (free_idx_cols in 1:(K - 1)) {
+        Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
+        prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta[free_idx_cols])
+        Beta_prop <- Beta
+        Beta_prop[, free_idx_cols] <- prop#matrix(prop, nrow = q, ncol = K - 1)
+        #Beta_prop[, K] <- 0
+        # compute new pi_ik (n x K)
+        pi_prop <- compute_pi_ik(X, Beta_prop)
+        # log prior for Beta (Gaussian iid)
+        lp_prior_old <- -0.5 * sum(Beta^2) / (sigma_beta^2)
+        lp_prior_new <- -0.5 * sum(Beta_prop^2) / (sigma_beta^2)
+        # log-likelihood of labels given gating: sum_i log pi_i,z[i] (only depends on z)
+        ll_old <- sum(log(pi_ik[cbind(1:n, z)] + 1e-300))
+        ll_new <- sum(log(pi_prop[cbind(1:n, z)] + 1e-300))
+        log_accept <- (ll_new + lp_prior_new) - (ll_old + lp_prior_old)
+        if (log(runif(1)) < log_accept) {
+          Beta <- Beta_prop
+          pi_ik <- pi_prop
+          # optionally track acceptance
+          acc_count_beta[free_idx_cols] <- acc_count_beta[free_idx_cols] + 1
         }
       }
       
-      # --- Step 4: Update nu (MH) ---
+      # Identifiability constraint
+      Beta[, K] <- 0
+      
+      
+      # # --- Step 3b: update Gamma indicators (Gibbs) ---
+      # # use exact posterior p(gamma=1 | beta) \propto pi_gamma * N(beta | 0, sigma_beta^2)
+      # beta_cur <- Beta[, free_idx_cols]  # q x (K-1)
+      # for (j in 1:q) {
+      #   for (k in 1:(K-1)) {
+      #     bval <- beta_cur[j, k]
+      #     # log-prob (unnormalized) for gamma = 1 and gamma = 0
+      #     log_p1 <- log(pi_gamma + 1e-300) - 0.5 * (bval^2) / (sigma_beta^2) - 0.5 * log(2 * pi * sigma_beta^2)
+      #     log_p0 <- log(1 - pi_gamma + 1e-300) - 0.5 * (bval^2) / (tau0^2) - 0.5 * log(2 * pi * tau0^2)
+      #     # numeric stable conversion to probability
+      #     maxlog <- max(log_p1, log_p0)
+      #     p1 <- exp(log_p1 - maxlog)
+      #     p0 <- exp(log_p0 - maxlog)
+      #     prob1 <- p1 / (p1 + p0)
+      #     Gamma[j, k] <- rbinom(1, 1, prob1)
+      #   }
+      # }
+
+      # --- Step 4: update Sigma_k using current assignments z ---
+      for (k in 1:K) {
+        idx <- which(z == k)
+        nk <- length(idx)
+        if (nk == 0) {
+          # sample from prior-ish fallback
+          Sigma_k[, , k] <- Psi0 / (nu0 - p - 1 + 1e-8)
+        } else {
+          S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
+          S_sum <- matrix(S_sum_vec, p, p)
+          nu_post <- nu0 + nk * nu_k[k]
+          Psi_post <- Psi0 + S_sum
+          Psi_post_inv <- tryCatch(solve(Psi_post), error = function(e) solve(Psi_post + diag(1e-8, p)))
+          Sigma_k[, , k] <- sampleIW(nu_post, Psi_post_inv)
+        }
+      }
+
+      # --- Step 5: update nu_k (MH) as before ---
       if (estimate_nu) {
         for (k in 1:K) {
           curr_nu <- nu_k[k]
           prop_log <- rnorm(1, log(curr_nu), mh_sigma[k])
-          # prop_log <- log(curr_nu) + rnorm(1, 0, mh_sigma) # random-walk MH
           prop_nu <- exp(prop_log)
-          
-          if (prop_nu > p - 1 + 1e-6) {
-            # We need the Likelihood sum for this cluster
-            # Reuse the data stats we already know
+          if (prop_nu > p - 1 + 1e-8) {
             idx <- which(z == k)
             if (length(idx) > 0) {
-              # Re-calculate only necessary parts
-              # We need log|S| sum and tr(Sig^-1 S) sum
-              
-              # Grab the specific rows and sum them up for efficiency
               sum_log_det_S_k <- sum(log_det_S[idx])
-              
-              # We already have Sig_inv from Step 1?
-              # No, Step 3 updated Sigma. We must re-invert current Sigma.
               Sig <- Sigma_k[, , k]
-              chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-6, p)))
+              chol_Sig <- tryCatch(chol(Sig), error = function(e) chol(Sig + diag(1e-8, p)))
               log_det_Sig <- 2 * sum(log(diag(chol_Sig)))
               # Sig_inv <- chol2inv(chol_Sig)
-              
-              # # Sum of traces = Tr(Sig^-1 * Sum(S))
-              # # We can calculate Sum(S) fast
               # S_sum_vec <- colSums(S_mat[idx, , drop = FALSE])
               # sum_tr_val <- sum(as.vector(Sig_inv) * S_sum_vec)
-              
-              # Define a mini function for log-lik given Sufficient Stats
               calc_ll_nu <- function(val_nu) {
                 term1 <- (val_nu - p - 1) / 2 * sum_log_det_S_k
                 # term2 <- -0.5 * sum_tr_val ## this term is indep. of nu_k
@@ -386,325 +384,301 @@ mixturewishart <- function(S_list,
                 term4 <- -length(idx) * lmvgamma(val_nu / 2, p)
                 term1 + term3 + term4
               }
-              
               ll_old <- calc_ll_nu(curr_nu)
               ll_new <- calc_ll_nu(prop_nu)
             } else {
               ll_old <- 0
               ll_new <- 0
             }
-            
-            # Priors + Jacobian
             lp_old <- (nu_prior_a - 1) * log(curr_nu) - nu_prior_b * curr_nu + log(curr_nu)
             lp_new <- (nu_prior_a - 1) * log(prop_nu) - nu_prior_b * prop_nu + log(prop_nu)
-            
             if (log(runif(1)) < (ll_new + lp_new) - (ll_old + lp_old)) {
               nu_k[k] <- prop_nu
-              acc_count[k] <- acc_count[k] + 1
+              acc_count_nu[k] <- acc_count_nu[k] + 1
             }
           }
         }
       }
-      # browser() ##TODO: check bugs in updating nu_k
-      # nu_k <- c(8, 12, 3)
-      
-      # --- Calculate LogLik for history (fast approximation using Step 1 data) ---
-      # We actually calculated logpost at the start of the loop (using old params).
-      # We can use that for the record, or re-calc.
-      # Using the one from Step 1 is "Lag-1" loglik but much faster.
-      # For strictness, let's recalculate using log-sum-exp on logpost:
-      # Note: logpost updated in Step 1 corresponds to Z sampling.
-      
-      # Fast LogSumExp on rows
+
+      # --- Compute loglik approx for monitoring ---
       max_l <- apply(logpost, 1, max)
       row_sums <- exp(logpost - max_l)
       logliks[iter] <- sum(max_l + log(rowSums(row_sums)))
       logliks_individual[iter, ] <- max_l + log(rowSums(row_sums))
-      
-      # --- Save ---
+
+      # --- Save samples after burnin and thinning ---
       ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
       if (iter %% thin == 0) {
         iter_save <- iter_save + 1
         if (iter_save <= nsave) {
-          out_pi_ik[iter_save, , ] <- pi_ik
-          out_pi[iter_save, ] <- pi_k
+          out_beta[iter_save, , ] <- Beta
           out_nu[iter_save, ] <- nu_k
           out_Sigma[[iter_save]] <- Sigma_k
           out_z[iter_save, ] <- z
+          out_pi_ik[iter_save, , ] <- pi_ik
         }
+        out_pi_mean <- out_pi_mean + pi_ik
       }
-      
+
       if (verbose && (iter %% 500 == 0 || iter == 1)) {
-        # Calculate speed
         # elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
         # rate <- iter / elapsed
         cat(sprintf(
-          "Iter %4d | LL=%.1f | acc_rate_nu=%.3f\n",
-          iter, logliks[iter], acc_count / iter #min(acc_count / iter), max(acc_count / iter)
+          "Iter %4d | LL=%.1f | acc_rate_nu=%.3f | acc_rate_beta=%.3f\n",
+          iter, logliks[iter], acc_count_nu / iter, #min(acc_count_nu / iter), max(acc_count_nu / iter),
+          acc_count_beta / iter #min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }
     }
-    
-    sigma_posterior_mean <- Reduce("+", out_Sigma) / length(out_Sigma)
-    
+
+    # finalize posterior mean of pi
+    n_saved <- max(1, iter_save)
+    out_pi_mean <- out_pi_mean / max(1, nsave) # average over saved iterations
+
     ret <- list(
+      Beta_samples = out_beta,
+      nu_samples = out_nu,
+      Sigma_samples = out_Sigma,
+      z_samples = out_z,
       pi_ik = out_pi_ik,
-      pi = out_pi, nu = out_nu, Sigma = out_Sigma, z = out_z,
-      sigma_posterior_mean = sigma_posterior_mean, loglik = logliks,
+      pi_mean = out_pi_mean,
+      loglik = logliks,
       loglik_individual = logliks_individual
     )
-    
-    return(ret)
   }
 
   if (method == "em") {
-    maxiter <- niter
-    ret <- mixturewishart.em(
-      S_list, K, 
-      n_restarts, restart_iters,
-      init_pi, init_Sigma, init_nu,
-      maxiter, tol, estimate_nu, verbose
+    maxit <- niter
+    ret <- moewishart.em(
+      S_list, X, K, maxit, tol, verbose,
+      init, estimate_nu, init_nu, ridge
     )
   }
 
   return(ret)
 }
 
-# -- Internal function with EM algorithm for the Wishart mixture model--
+# -- Internal help functions for full Bayesian--
 
-mixturewishart.em <- function(S_list, K,
-                          n_restarts = 3,
-                          restart_iters = 20, 
-                          init_pi = NULL,
-                          init_Sigma = NULL,
-                          init_nu = NULL,
-                          maxiter = 200,
-                          tol = 1e-6,
-                          estimate_nu = TRUE,
-                          verbose = TRUE) {
+# helper: compute pi_ik matrix (n x K) given Beta
+softmax_rows <- function(L) {
+  # L: n x K matrix of linear predictors
+  m <- apply(L, 1, max)
+  Ls <- L - m
+  S <- exp(Ls)
+  row_sums <- rowSums(S)
+  S / row_sums
+}
+compute_pi_ik <- function(X, Beta) {
+  L <- X %*% Beta # n x K
+  # numeric stability: subtract row max
+  rm <- apply(L, 1, max)
+  Ls <- L - rm
+  expL <- exp(Ls)
+  expL / rowSums(expL)
+}
+
+# -- Internal function with EM algorithm for the Wishart mixture-of-experts model--
+
+moewishart.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
+                           init = NULL, estimate_nu = FALSE, init_nu = NULL, ridge = 1e-8) {
   n <- length(S_list)
-  p <- ncol(S_list[[1]])
+  p <- nrow(S_list[[1]])
+  q <- ncol(X)
 
-  # Pre-compute log|S_i| as it is constant throughout EM
-  logdetS <- sapply(S_list, function(S) {
-    as.numeric(determinant(S + diag(p) * 1e-12, logarithm = TRUE)$modulus)
-  })
+  # --- CORRECTION 1: BREAK SYMMETRY IN INITIALIZATION ---
 
-  # --- 1. Initialization (CORRECTED) ---
-
-  # =========================================================================
-  # PHASE 1: Initialization Selection (Multiple Restarts)
-  # =========================================================================
-  
-  # We only run restarts if the user did NOT provide specific starting Sigma/pi
-  if (is.null(init_Sigma) && is.null(init_pi) && is.null(init_nu)) {
-    
-    if (verbose) cat("Running", n_restarts, "initialization restarts...\n")
-    
-    best_start_loglik <- -Inf
-    best_params <- list()
-    
-    r <- 1
-    repeat {
-    ##for (r in 1:n_restarts) {
-      
-      # A. Random Initialization for this attempt
-      # Default nu
-      curr_nu <- if (is.null(init_nu)) rep_len(c(p+1,p + 5), length.out = K) else init_nu
-      tamtam <- rgamma(K,shape = 1)
-      curr_pi <-tamtam/sum(tamtam)
-      
-      # Random centers
-      rand_indices <- sample(seq_len(n), K)
-      curr_Sigma <- lapply(seq_len(K), function(k) {
-        idx <- rand_indices[k]
-        S_list[[idx]] / curr_nu[k]
-      })
-      
-      # B. Run "Small EM" (Short Loop)
-      curr_loglik <- -Inf
-      
-      for (small_it in 1:restart_iters) {
-        # E-Step (Simplified)
-        logdens <- matrix(NA, n, K)
-        for (k in seq_len(K)) {
-          for (i in seq_len(n)) {
-            #if(is.null(curr_Sigma[[k]])) browser()
-            logdens[i, k] <- dWishart(S_list[[i]], curr_nu[k], curr_Sigma[[k]], 
-                                      logarithm = TRUE)
-          }
-          logdens[, k] <- logdens[, k] + log(curr_pi[k])
-        }
-        maxlog <- apply(logdens, 1, max)
-        denom <- maxlog + log(rowSums(exp(logdens - maxlog)))
-        logtau <- sweep(logdens, 1, denom, FUN = "-")
-        tau <- exp(logtau)
-        curr_loglik <- sum(denom)
-        
-        # M-Step (Simplified - update Pi and Sigma only, keep Nu fixed for stability in init)
-        N_k <- colSums(tau)
-        curr_pi <- N_k / n
-        
-        # Check for collapse
-        if (any(N_k < 1e-6)) { curr_loglik <- -Inf; break } 
-        
-        for (k in seq_len(K)) {
-          Ssum <- matrix(0, p, p)
-          for(i in seq_len(n)) if(tau[i,k] > 1e-10) Ssum <- Ssum + tau[i,k]*S_list[[i]]
-          curr_Sigma[[k]] <- Ssum / (N_k[k] * curr_nu[k])
-        }
-      }
-      
-      # C. Compare and Store
-      if (verbose) cat(sprintf("  -> Restart %d: Loglik = %.2f\n", r, curr_loglik))
-      
-      if (curr_loglik > best_start_loglik) {
-        best_start_loglik <- curr_loglik
-        best_params <- list(pi = curr_pi, Sigma = curr_Sigma, nu = curr_nu)
-      }
-      
-      if (r >= n_restarts && curr_loglik > -Inf) break
-      r <- r + 1
-    }
-    
-    # Set the main loop variables to the winner
-    pi_k <- best_params$pi
-    Sigma_k <- best_params$Sigma
-    nu_k <- best_params$nu
-    
+  pars <- list()
+  if (is.null(init) || is.null(init$beta)) {
+    beta_vec <- rep(0, q * (K - 1))
   } else {
-    if (is.null(init_Sigma) || is.null(init_pi) || is.null(init_nu)) {
-      stop("Please provide all initial values of 'init_Sigma', 'init_pi' and 'init_nu'!")
-    }
-    # Manual initialization provided by user
-    if (is.null(init_pi)) pi_k <- rep(1 / K, K) else pi_k <- init_pi
-    if (is.null(init_nu)) nu_k <- rep(p + 5, K) else nu_k <- init_nu
-    Sigma_k <- init_Sigma
+    beta_vec <- as.numeric(init$beta)
   }
 
-  tau <- matrix(0, n, K)
-  loglik_trace <- numeric()
+  if (is.null(init) || is.null(init$Sigma)) {
+    pooled <- Reduce("+", S_list) / n
+    if (is.null(init_nu)) init_nu <- rep(p + 5, K)
+    # Add slight jitter to initial Sigmas to ensure they aren't identical
+    Sigma_list <- lapply(1:K, function(k) {
+      (pooled / init_nu[k]) * (1 + runif(1, -0.1, 0.1))
+    })
+  } else {
+    Sigma_list <- init$Sigma
+  }
 
-  for (iter in seq_len(maxiter)) {
-    # --- 2. E-Step ---
-    logdens <- matrix(NA, n, K)
+  if (is.null(init_nu)) init_nu <- rep(p + 5, K)
+  nu_vec <- init_nu
 
-    for (k in seq_len(K)) {
-      # Vectorize this loop if possible, but loop is okay for readability
-      for (i in seq_len(n)) {
-        #if(is.null(Sigma_k[[k]])) browser()
-        logdens[i, k] <- dWishart(S_list[[i]], nu_k[k], Sigma_k[[k]],
+  loglik_hist <- numeric(maxit)
+  small_eps <- ridge
+
+  # precompute log|S_i| for all i
+  logdetS <- sapply(S_list, function(S) as.numeric(determinant(S, logarithm = TRUE)$modulus))
+
+  # EM loop
+  for (iter in 1:maxit) {
+    # --- E-step ---
+    pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
+    log_f_mat <- matrix(NA, n, K)
+
+    for (k in 1:K) {
+      for (i in 1:n) {
+        # Use precomputed logdetS to speed up
+        log_f_mat[i, k] <- dWishart(S_list[[i]], nu_vec[k], Sigma_list[[k]],
+          logdetS[i],
           logarithm = TRUE
         )
       }
-      logdens[, k] <- logdens[, k] + log(pi_k[k])
     }
 
-    # Log-Sum-Exp for numerical stability
-    maxlog <- apply(logdens, 1, max)
-    # Prevent underflow for very small probabilities
-    denom <- maxlog + log(rowSums(exp(logdens - maxlog)))
-    logtau <- sweep(logdens, 1, denom, FUN = "-")
-    tau <- exp(logtau)
+    log_post <- log(pi_mat + 1e-300) + log_f_mat
+    row_max <- apply(log_post, 1, max)
+    exp_shifted <- exp(log_post - row_max)
+    row_sums <- rowSums(exp_shifted)
+    gamma <- exp_shifted / row_sums
 
-    current_loglik <- sum(denom)
-    loglik_trace <- c(loglik_trace, current_loglik)
+    loglik <- sum(row_max + log(row_sums))
+    loglik_hist[iter] <- loglik
 
-    if (verbose && iter %% 10 == 0) {
-      cat(sprintf(
-        "Iter %3d | Loglik: %.4f | Nu: %s\n",
-        iter, current_loglik, paste(round(nu_k, 2), collapse = ", ")
-      ))
-    }
+    if (verbose) cat(sprintf("Iter %3d  loglik = %.6f\n", iter, loglik))
 
-    # Convergence check
-    if (iter > 2 && abs(loglik_trace[iter] - loglik_trace[iter - 1]) < tol) {
-      if (verbose) cat("Converged at iteration", iter, "\n")
+    if (iter > 1 && abs(loglik - loglik_hist[iter - 1]) < tol) {
+      if (verbose) cat("Converged by loglik tolerance.\n")
       break
     }
 
-    # --- 3. M-Step ---
-    N_k <- colSums(tau)
-    pi_k <- N_k / n
+    # --- M-step ---
+    an <- compute_A_nk(gamma, K, p, n, S_list)
+    A_list <- an$A
+    n_k <- an$n_k
 
-    # Prevent collapse of clusters
-    if (any(N_k < 1e-6)) {
-      # Re-initialize empty cluster to a random data point
-      bad_k <- which(N_k < 1e-6)
-      for (bk in bad_k) {
-        ridx <- sample(n, 1)
-        Sigma_k[[bk]] <- S_list[[ridx]] / nu_k[bk]
-        N_k[bk] <- 1 # Soft reset
+    # Avoid division by zero if a cluster dies
+    valid_k <- n_k > 1e-6
+
+    for (k in 1:K) {
+      if (valid_k[k]) {
+        if (estimate_nu) {
+          mean_logS_k <- sum(gamma[, k] * logdetS) / n_k[k]
+          nu_old <- nu_vec[k]
+          nu_vec[k] <- solve_nu(nu_old, A_list[[k]], n_k[k], mean_logS_k, p)
+        }
+
+        # Update Sigma using the NEW nu
+        Sigma_new <- A_list[[k]] / (nu_vec[k] * n_k[k])
+        Sigma_new <- Sigma_new + diag(small_eps, p)
+        Sigma_list[[k]] <- (Sigma_new + t(Sigma_new)) / 2
+      } else {
+        # Reset empty component (optional strategy)
+        if (verbose) cat(sprintf("Resetting component %d\n", k))
+        nu_vec[k] <- p + 5
+        Sigma_list[[k]] <- diag(1, p)
       }
     }
-    
-    for (k in seq_len(K)) {
-      # Weighted sum of S_i
-      # Using Reduce is okay, but loop accumulation is often clearer/faster in R for lists
-      Ssum <- matrix(0, p, p)
-      for (i in seq_len(n)) {
-        if (tau[i, k] > 1e-10) { # Sparse update optimization
-          Ssum <- Ssum + tau[i, k] * S_list[[i]]
-        }
-      }
-      
-      # 3a. Update Sigma (conditional on current nu)
-      Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
-    }
 
-    for (k in seq_len(K)) {
-
-      # 3b. Update Nu (if requested)
-      if (estimate_nu) {
-        # Profile Log-Likelihood maximization for nu
-        # Target: log(nu/2) + psi(nu/2 + ...) terms vs Data Stats
-
-        T1k <- sum(tau[, k] * logdetS)
-        logdetSig <- as.numeric(determinant(Sigma_k[[k]] + diag(p) * 1e-12, 
-                                            logarithm = TRUE)$modulus)
-
-        lhs <- (T1k / N_k[k]) - logdetSig - p * log(2)
-
-        # Newton-Raphson functions
-
-        f_optim <- function(v) {
-          # We want to find root of: LHS - sum(digamma(v/2 + ...))
-          # , strictly: E[log|W|] = log|Sigma| + p*log(2) + sum(digamma(...))
-          # So sum(digamma(...)) = E[log|W|] - log|Sigma| - p*log(2) = LHS.
-          # So we want: LHS - sum(digamma(...)) = 0
-          lhs - sum(digamma(v / 2 + (1 - seq_len(p)) / 2))
-        }
-
-        fp_optim <- function(v) {
-          -0.5 * sum(trigamma(v / 2 + (1 - seq_len(p)) / 2))
-        }
-
-        # Newton Iteration
-        curr_nu <- nu_k[k]
-        for (nm in 1:50) {
-          val <- f_optim(curr_nu)
-          grad <- fp_optim(curr_nu)
-          if (is.na(val) || is.na(grad) || abs(grad) < 1e-8) break
-
-          step <- val / grad
-          curr_nu <- curr_nu - step
-
-          # Constraints
-          if (curr_nu <= p) curr_nu <- p + 0.1
-          if (curr_nu > 1e3) curr_nu <- 1e3
-          if (abs(step) < 1e-4) break
-        }
-        nu_k[k] <- curr_nu
-
-        # 3c. Consistency update: Re-calc Sigma with new nu
-        #Sigma_k[[k]] <- Ssum / (N_k[k] * nu_k[k])
-      }
-    }
-    # if (any(nu_k > 1e3)) break
+    # Update beta
+    opt <- optim(beta_vec,
+      fn = neg_wt_multinom, gr = grad_wt_multinom,
+      q, K, X, # Further arguments to be passed to fn and gr
+      method = "BFGS", gamma = gamma, control = list(maxit = 50)
+    )
+    beta_vec <- opt$par
   }
 
+  Beta_mat <- matrix(0, q, K)
+  if (K > 1) Beta_mat[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
+  colnames(Beta_mat) <- paste0("comp", 1:K)
+
   list(
-    pi = pi_k, Sigma = Sigma_k, nu = nu_k, tau = tau,
-    loglik = loglik_trace, iterations = iter
+    K = K, p = p, q = q, n = n,
+    Beta = Beta_mat, Sigma = Sigma_list, nu = nu_vec,
+    gamma = gamma, loglik = loglik_hist[1:iter], iter = iter
   )
+}
+
+# -- Internal help functions for EM algorithm--
+
+# helper: log multivariate gamma derivative (psi_p) and its derivative
+psi_p <- function(a, p) sum(digamma(a + (1 - (1:p)) / 2))
+
+trigamma_p <- function(a, p) sum(trigamma(a + (1 - (1:p)) / 2))
+
+compute_A_nk <- function(gamma, K, p, n, S_list) {
+  n_k <- colSums(gamma)
+  A_list <- vector("list", K)
+  for (k in 1:K) {
+    A <- matrix(0, p, p)
+    # Vectorizing this sum is hard with list of matrices, loop is okay
+    for (i in 1:n) A <- A + gamma[i, k] * S_list[[i]]
+    A_list[[k]] <- A
+  }
+  list(A = A_list, n_k = n_k)
+}
+gating_probs_from_beta <- function(beta_vec, q, K, X) {
+  B <- matrix(0, q, K)
+  if (K > 1) {
+    B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
+  }
+  eta <- X %*% B
+  eta_max <- apply(eta, 1, max)
+  exp_eta <- exp(eta - eta_max)
+  denom <- rowSums(exp_eta)
+  exp_eta / denom
+}
+
+neg_wt_multinom <- function(beta_vec, gamma, q, K, X) {
+  pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
+  # prevent log(0)
+  ll <- sum(gamma * log(pi_mat + 1e-300))
+  -ll
+}
+
+grad_wt_multinom <- function(beta_vec, gamma, q, K, X) {
+  B <- matrix(0, q, K)
+  if (K > 1) B[, 1:(K - 1)] <- matrix(beta_vec, q, K - 1)
+  pi_mat <- gating_probs_from_beta(beta_vec, q, K, X)
+  grad_mat <- matrix(0, q, K - 1)
+  for (k in 1:(K - 1)) {
+    # gradient of NEGATIVE likelihood is sum((pi - gamma) * X)
+    diff <- pi_mat[, k] - gamma[, k]
+    grad_mat[, k] <- colSums(X * diff)
+  }
+  as.numeric(grad_mat)
+}
+
+# --- CORRECTION 2: FIX NEWTON-RAPHSON DERIVATIVE ---
+solve_nu <- function(init_nu, A_k, n_k, mean_logS_k, p, maxit = 20) {
+  nu <- max(init_nu, p + 1.001)
+
+  # OPTIMIZATION: Compute logdet(A) once outside the loop
+  # A_k is constant during the nu update
+  logdetA <- as.numeric(determinant(A_k, logarithm = TRUE)$modulus)
+
+  for (it in 1:maxit) {
+    # Use algebraic property: log|A / (n*nu)| = log|A| - p*log(n*nu)
+    logdetSigma <- logdetA - p * log(n_k * nu)
+
+    # Objective function
+    lhs <- psi_p(nu / 2, p)
+    rhs <- mean_logS_k - logdetSigma - p * log(2)
+    fval <- lhs - rhs
+
+    if (abs(fval) < 1e-6) break
+
+    # Derivative
+    df <- 0.5 * trigamma_p(nu / 2, p) - (p / nu)
+
+    # Newton update
+    nu_new <- nu - fval / df
+
+    # Boundary check
+    if (!is.finite(nu_new) || nu_new <= p + 1e-6) {
+      nu_new <- (nu + (p + 1.0)) / 2
+    }
+    if (abs(nu_new - nu) < 1e-6) {
+      nu <- nu_new
+      break
+    }
+    nu <- nu_new
+  }
+  max(nu, p + 1.001)
 }
