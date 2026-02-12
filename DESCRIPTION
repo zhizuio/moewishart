@@ -1,5 +1,5 @@
 Package: moewishart
-Title: Mixture of Experts of Wishart model for covariance data
+Title: Mixture of Experts of Wishart Model for Covariance Data
 Version: 0.4
 Description: MLE and Bayesian estimation for the mixture and mixture of experts of Wishart.
 Authors@R: c(person("The Tien", "Mai", role=c("aut")),

@@ -13,7 +13,7 @@ library(moewishart)
 # run Bayesian mixture model, K = 2
 my_K_intial <- 2
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 6, nu_prior_b = 0.5,
   mh_sigma = 0.06,
@@ -32,7 +32,7 @@ drug_class <- data.frame(Drugs = names(S_list), BayesMM_K2 = z_hat)
 # run Bayesian mixture model, K = 3
 my_K_intial <- 3
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
   mh_sigma = 0.08,
@@ -51,7 +51,7 @@ drug_class <- cbind(drug_class, BayesMM_K3 = z_hat)
 # run Bayesian mixture model, K = 4
 my_K_intial <- 4
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.3,
   mh_sigma = c(0.08, 0.12, 0.2, 0.08),
@@ -70,7 +70,7 @@ drug_class <- cbind(drug_class, BayesMM_K4 = z_hat)
 # run Bayesian mixture model, K = 5
 my_K_intial <- 5
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
   mh_sigma = c(0.08, 0.18, 0.2, 0.08, 0.1),
@@ -89,7 +89,7 @@ drug_class <- cbind(drug_class, BayesMM_K5 = z_hat)
 # run Bayesian mixture model, K = 6
 my_K_intial <- 6
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 4, nu_prior_b = 0.5,
   mh_sigma = c(0.07, 2.2, 0.2, 0.15, 0.1, 0.2),
@@ -108,7 +108,7 @@ drug_class <- cbind(drug_class, BayesMM_K6 = z_hat)
 # run Bayesian mixture model, K = 7
 my_K_intial <- 7
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 6, nu_prior_b = 0.5,
   mh_sigma = c(0.2, 2, 1.6, 0.08, 0.1, 0.08, 0.2),
@@ -127,7 +127,7 @@ drug_class <- cbind(drug_class, BayesMM_K7 = z_hat)
 # run Bayesian mixture model, K = 8
 my_K_intial <- 8
 set.seed(123)
-fitBayes <- moewishart(S_list,
+fitBayes <- mixturewishart(S_list,
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
   mh_sigma = c(2, 2.5, .05, 0.2, .08, 0.15, 0.15, 2.5),

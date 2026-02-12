@@ -6,7 +6,7 @@
 #' Components are Wishart-distributed. Supports Bayesian sampling and
 #' EM-based maximum-likelihood estimation.
 #'
-#' @name moewishartX
+#' @name moewishart
 #'
 #' @importFrom utils combn
 #' @importFrom stats optim
@@ -144,7 +144,7 @@
 #' )
 #' 
 #' set.seed(123)
-#' fit <- moewishartX(
+#' fit <- moewishart(
 #'   dat$S, X = cbind(1, dat$X), K = 3, 
 #'   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
 #'   mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
@@ -157,7 +157,7 @@
 #' colMeans(nu_mcmc) 
 #'
 #' @export
-moewishartX <- function(S_list,
+moewishart <- function(S_list,
                         X, # n x q matrix of covariates for gating
                         K,
                         niter = 3000,
@@ -449,7 +449,7 @@ moewishartX <- function(S_list,
 
   if (method == "em") {
     maxit <- niter
-    ret <- moewishartX.em(
+    ret <- moewishart.em(
       S_list, X, K, maxit, tol, verbose,
       init, estimate_nu, init_nu, ridge
     )
@@ -480,7 +480,7 @@ compute_pi_ik <- function(X, Beta) {
 
 # -- Internal function with EM algorithm for the Wishart mixture-of-experts model--
 
-moewishartX.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
+moewishart.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
                            init = NULL, estimate_nu = FALSE, init_nu = NULL, ridge = 1e-8) {
   n <- length(S_list)
   p <- nrow(S_list[[1]])

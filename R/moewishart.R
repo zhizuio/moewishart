@@ -8,7 +8,7 @@
 #' \eqn{\nu_k} and SPD scale matrix \eqn{\Sigma_k}. Mixture weights
 #' \eqn{\pi_k} sum to \eqn{1}.
 #'
-#' @name moewishart
+#' @name mixturewishart
 #'
 #' @importFrom utils combn
 #' @importFrom stats kmeans
@@ -136,7 +136,7 @@
 #' )
 #' 
 #' set.seed(123)
-#' fit <- moewishart(
+#' fit <- mixturewishart(
 #'   dat$S, K = 3, 
 #'   mh_sigma = 0.2,
 #'   niter = 1000, burnin = 500
@@ -148,7 +148,7 @@
 #' colMeans(nu_mcmc) 
 #'
 #' @export
-moewishart <- function(S_list,
+mixturewishart <- function(S_list,
                        K,
                        niter = 3000,
                        burnin = 1000,
@@ -459,7 +459,7 @@ moewishart <- function(S_list,
 
   if (method == "em") {
     maxiter <- niter
-    ret <- moewishart.em(
+    ret <- mixturewishart.em(
       S_list, K, 
       n_restarts, restart_iters,
       init_pi, init_Sigma, init_nu,
@@ -472,7 +472,7 @@ moewishart <- function(S_list,
 
 # -- Internal function with EM algorithm for the Wishart mixture model--
 
-moewishart.em <- function(S_list, K,
+mixturewishart.em <- function(S_list, K,
                           n_restarts = 3,
                           restart_iters = 20, 
                           init_pi = NULL,

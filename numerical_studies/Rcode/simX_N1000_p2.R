@@ -42,7 +42,7 @@ for (seed.idx in 1:n_sim) {
     
   # run Bayesian mixture model
   set.seed(123)
-  fitBayes <- moewishart(S_list,
+  fitBayes <- mixturewishart(S_list,
     K = my_K_intial,  
     nu_prior_a = 2, nu_prior_b = 0.5,
     mh_sigma = 0.08,
@@ -51,7 +51,7 @@ for (seed.idx in 1:n_sim) {
 
   # run mixture model with EM algorithm
   set.seed(123)
-  fitEM <- moewishart(S_list,
+  fitEM <- mixturewishart(S_list,
     method = "em", #cpp = TRUE,
     K = my_K_intial,  
     niter = 10000, verbose = TRUE,
@@ -60,7 +60,7 @@ for (seed.idx in 1:n_sim) {
 
   # run Bayesian MoE model
   set.seed(123)
-  MoEfitBayes <- moewishartX(
+  MoEfitBayes <- moewishart(
     S_list, X = cbind(1, dat$X),
     K = my_K_intial,  
     nu_prior_a = 2, nu_prior_b = 0.5,
@@ -70,7 +70,7 @@ for (seed.idx in 1:n_sim) {
 
   # run MoE model with EM algorithm
   set.seed(123)
-  MoEfitEM <- moewishartX(
+  MoEfitEM <- moewishart(
     S_list, X = cbind(1, dat$X),
     method = "em",
     K = my_K_intial,  

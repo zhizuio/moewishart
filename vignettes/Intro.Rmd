@@ -80,7 +80,7 @@ dat <- simData(n, p,
 
 # fit Bayesian MoE-Wishart model
 set.seed(123)
-fit <- moewishartX(
+fit <- moewishart(
   dat$S, X = cbind(1, dat$X), K = 3, 
   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
   mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
@@ -127,7 +127,7 @@ apply(beta_mcmc, c(2, 3), mean)
 ```{r, results='hide'}
 # fit Bayesian Wishart mixture model
 set.seed(123)
-fit2 <- moewishart(
+fit2 <- mixturewishart(
   dat$S, K = 3, 
   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances
   niter = 3000, burnin = 1000
@@ -155,7 +155,7 @@ colMeans(fit2$nu[-c(1:burnin), ])
 ```{r}
 # fit MoE-Wishart model via EM alg.
 set.seed(123)
-fit3 <- moewishartX(
+fit3 <- moewishart(
   dat$S, X = cbind(1, dat$X), K = 3, 
   method = "em",
   niter = 3000
@@ -190,7 +190,7 @@ fit3$Beta
 ```{r}
 # fit Wishart mixture model via EM alg.
 set.seed(123)
-fit4 <- moewishart(
+fit4 <- mixturewishart(
   dat$S, K = 3, 
   method = "em",
   niter = 3000

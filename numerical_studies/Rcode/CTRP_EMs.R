@@ -15,7 +15,7 @@ K <- 2:11 #c(2, 3, 5, 8, 10, 15, 20, 30)
 fitEM <- list()
 for(i in 1:length(K)) {
   set.seed(123)
-  fitEM[[i]] <- moewishart(S_list,
+  fitEM[[i]] <- mixturewishart(S_list,
     method = "em", #cpp = TRUE,
     K = K[i], 
     niter = 10000, verbose = TRUE,
@@ -51,7 +51,7 @@ K <- 2:11
 fitEM_MoE <- list()
 for(i in 1:length(K)) {
   set.seed(123)
-  fitEM_MoE[[i]] <- moewishartX(
+  fitEM_MoE[[i]] <- moewishart(
     S_list, X = cbind(1, x),
     method = "em",
     K = K[i], 

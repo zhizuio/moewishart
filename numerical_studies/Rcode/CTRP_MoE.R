@@ -38,7 +38,7 @@ library(moewishart)
 # run Bayesian mixture model, K = 2
 my_K_intial <- 2
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -58,7 +58,7 @@ drug_class <- data.frame(drug_class, Bayes_MoE_K2 = z_hat)
 # run Bayesian mixture model, K = 3
 my_K_intial <- 3
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -79,7 +79,7 @@ drug_class <- cbind(drug_class, Bayes_MoE_K3 = z_hat)
 # run Bayesian mixture model, K = 4
 my_K_intial <- 4
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -99,7 +99,7 @@ drug_class <- cbind(drug_class, Bayes_MoE_K4 = z_hat)
 # run Bayesian mixture model, K = 5
 my_K_intial <- 5
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -120,7 +120,7 @@ drug_class <- cbind(drug_class, Bayes_MoE_K5 = z_hat)
 # run Bayesian mixture model, K = 6
 my_K_intial <- 6
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -141,7 +141,7 @@ drug_class <- cbind(drug_class, Bayes_MoE_K6 = z_hat)
 # run Bayesian mixture model, K = 7
 my_K_intial <- 7
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, 
   nu_prior_a = 2, nu_prior_b = 0.2,
@@ -162,7 +162,7 @@ drug_class <- cbind(drug_class, Bayes_MoE_K7 = z_hat)
 # run Bayesian mixture model, K = 8
 my_K_intial <- 8
 set.seed(123)
-fitBayes <- moewishartX(
+fitBayes <- moewishart(
   S_list, X = cbind(1, x),
   K = my_K_intial, #init_pi = init_pi, 
   nu_prior_a = 2, nu_prior_b = 0.2,
