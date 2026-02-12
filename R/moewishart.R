@@ -130,8 +130,8 @@
 #'
 #' # simulate data
 #' set.seed(123)
-#' n <- 200 # subjects
-#' p <- 10
+#' n <- 500 # subjects
+#' p <- 2
 #' # True gating coefficients (last column zero)
 #' set.seed(123) 
 #' Xq <- 3; K <- 3
@@ -140,7 +140,7 @@
 #' dat <- simData(n, p, 
 #'   Xq = 3, K = 3, betas = betas,
 #'   pis = c(0.35, 0.40, 0.25),
-#'   nus = c(8, 12, 3)
+#'   nus = c(8, 16, 3)
 #' )
 #' 
 #' set.seed(123)
