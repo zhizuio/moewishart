@@ -34,7 +34,7 @@
 #'         for efficiency (avoids repeated matrix inversions).
 #' }
 #'
-#' Note that: 
+#' Note that:
 #' (i) internally calls \code{rWishart(1, df = nu, Sigma = Psi_inv)}, and
 #' (ii) returns \code{solve(W)}; if numerical issues arise, consider
 #'         adding a small ridge to \eqn{\Psi^{-1}} prior to sampling.
@@ -48,7 +48,7 @@
 #' set.seed(123)
 #' p <- 3
 #' # Construct an SPD scale matrix Psi
-#' A <- matrix(rnorm(p*p), p, p)
+#' A <- matrix(rnorm(p * p), p, p)
 #' Psi <- crossprod(A) + diag(p) * 0.5
 #' Psi_inv <- solve(Psi)
 #'

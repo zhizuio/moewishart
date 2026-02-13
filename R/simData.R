@@ -62,7 +62,7 @@
 #'         \code{rWishart}.
 #' }
 #'
-#' Note that: 
+#' Note that:
 #' (i) in the MoE case, no intercept is automatically added to \code{X}.
 #'         Use \code{Xq} to include desired covariates; the default
 #'         \code{betas} is randomly generated with \code{betas[, K] = 0}, and
@@ -94,7 +94,8 @@
 #' set.seed(123)
 #' n <- 200 # subjects
 #' p <- 10
-#' dat <- simData(n, p, K = 3, 
+#' dat <- simData(n, p,
+#'   K = 3,
 #'   pis = c(0.35, 0.40, 0.25),
 #'   nus = c(8, 12, 3)
 #' )
@@ -119,7 +120,7 @@ simData <- function(n = 200, p = 2,
   if (length(nus) != K) {
     stop("Arguments 'pis' and 'nus' must have the same length!")
   }
-  
+
   # check betas matrix for MoE model
   if (Xq > 0 && (!is.null(betas))) {
     if (!is.matrix(betas)) {
@@ -129,13 +130,13 @@ simData <- function(n = 200, p = 2,
     if (dims[1] != Xq || dims[2] != Xq) {
       stop("Argument 'betas' has wrong dimensions!")
     }
-  } 
-  
+  }
+
   if (Xq > 0 && is.null(betas)) {
     betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
     betas[, K] <- 0
-  } 
-  
+  }
+
   # simulate covarites
   X <- NULL
   if (Xq > 0) {
@@ -168,7 +169,7 @@ simData <- function(n = 200, p = 2,
     if (NROW(Sigma[[1]]) != p || NCOL(Sigma[[1]]) != p) {
       stop("The given 'Sigma' matrix has incorrect dimension!")
     }
-    
+
     if (any(nus < p)) {
       stop("The given 'nus' has too small degrees of freedom!")
     }
@@ -188,7 +189,7 @@ simData <- function(n = 200, p = 2,
   list(
     S = S_list, z = z_true,
     nu = nus, pi = pis,
-    Sigma_list = Sigma_list, 
+    Sigma_list = Sigma_list,
     X = X, betas = betas
   )
 }

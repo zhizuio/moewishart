@@ -29,15 +29,15 @@
 #'        {2^{\nu p/2}\,|\Sigma|^{\nu/2}\,\Gamma_p(\nu/2)},
 #' }
 #' where \eqn{\Gamma_p(\cdot)} is the multivariate gamma function and
-#' \eqn{p} is the dimension. 
+#' \eqn{p} is the dimension.
 #'
-#' Note that 
-#' (i) \code{detS_val} can be supplied to avoid recomputing \eqn{\log|S|}, 
-#'  which is useful inside EM/MCMC loops, and 
-#'  (ii) small diagonal jitter is added internally to \eqn{S} and \eqn{\Sigma} 
+#' Note that
+#' (i) \code{detS_val} can be supplied to avoid recomputing \eqn{\log|S|},
+#'  which is useful inside EM/MCMC loops, and
+#'  (ii) small diagonal jitter is added internally to \eqn{S} and \eqn{\Sigma}
 #'  when computing determinants or solves for numerical stability.
-#' 
-#' Constraints: (i) \eqn{S} and \eqn{\Sigma} must be SPD, and (ii) the Wishart 
+#'
+#' Constraints: (i) \eqn{S} and \eqn{\Sigma} must be SPD, and (ii) the Wishart
 #' requires \eqn{\nu > p - 1}.
 #'
 #'
@@ -49,7 +49,7 @@
 #' set.seed(123)
 #' p <- 3
 #' # Construct an SPD Sigma
-#' A <- matrix(rnorm(p*p), p, p)
+#' A <- matrix(rnorm(p * p), p, p)
 #' Sigma <- crossprod(A) + diag(p) * 0.5
 #' # Draw a Wishart matrix using base stats::rWishart()
 #' W <- drop(rWishart(1, df = p + 5, Sigma = Sigma))
@@ -59,9 +59,9 @@
 #' @export
 dWishart <- function(S, nu, Sigma, detS_val = NULL, logarithm = TRUE) {
   # log density of Wishart S ~ W_p(nu, Sigma)
-  
+
   p <- ncol(S)
-  
+
   # Calculate log-determinants safely
   if (is.null(detS_val)) {
     detS_val <- as.numeric(determinant(S + diag(p) * 1e-6, logarithm = TRUE)$modulus)
@@ -75,7 +75,7 @@ dWishart <- function(S, nu, Sigma, detS_val = NULL, logarithm = TRUE) {
 
   term <- ((nu - p - 1) / 2) * detS_val - (nu / 2) * ldSigma - 0.5 * invSigma_S
   ret <- term - (nu * p / 2) * log(2) - lmvgamma(nu / 2, p)
-  
+
   if (!logarithm) {
     ret <- exp(ret)
   }

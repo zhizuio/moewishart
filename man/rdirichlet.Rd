@@ -23,7 +23,7 @@ vector \eqn{\alpha \in \mathbb{R}_+^K}. Each draw is a length-\eqn{K}
 probability vector on the simplex.
 }
 \details{
-Definition: 
+Definition:
  If \eqn{Y_k \sim \mathrm{Gamma}(\alpha_k, 1)} independently for
         \eqn{k=1,\dots,K} (shape \eqn{\alpha_k}, rate 1), then the
         normalized vector \eqn{X_k = Y_k / \sum_{j=1}^K Y_j} follows

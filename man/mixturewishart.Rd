@@ -153,7 +153,7 @@ Algorithms:
         when \code{estimate_nu = TRUE}. Degrees-of-freedom are updated
         via MH on \eqn{\log(\nu_k)} with proposal sd \code{mh_sigma}.
         Can integrate out \eqn{\pi} when sampling \eqn{z} if
-        \code{marginal.z = TRUE}. 
+        \code{marginal.z = TRUE}.
   \item \code{method = "em"}: Maximizes the observed-data log-
         likelihood via EM. The E-step computes responsibilities via
         Wishart log-densities. The M-step updates \eqn{\pi_k} and
@@ -161,9 +161,9 @@ Algorithms:
         \code{estimate_nu = TRUE}. Supports multiple random restarts.
 }
 
-Note that 
-(i) All matrices in \code{S_list} must be SPD. Small ridge terms may be 
-added internally for stability, and 
+Note that
+(i) All matrices in \code{S_list} must be SPD. Small ridge terms may be
+added internally for stability, and
 (ii) Multiple EM restarts are recommended for robustness on difficult datasets.
 }
 \examples{
@@ -172,21 +172,22 @@ added internally for stability, and
 set.seed(123)
 n <- 500 # subjects
 p <- 2
-dat <- simData(n, p, K = 3, 
+dat <- simData(n, p,
+  K = 3,
   pis = c(0.35, 0.40, 0.25),
   nus = c(8, 16, 3)
 )
 
 set.seed(123)
 fit <- mixturewishart(
-  dat$S, K = 3, 
+  dat$S,
+  K = 3,
   mh_sigma = c(0.2, 0.1, 0.1), # tune this for MH acceptance 20-40\%
   niter = 1000, burnin = 500
 )
 
-burnin <- 500
-# Posterior means for degrees of freedom of Wishart distributions: 
-nu_mcmc <- fit$nu[-c(1:burnin), ]
-colMeans(nu_mcmc) 
+# Posterior means for degrees of freedom of Wishart distributions:
+nu_mcmc <- fit$nu[-c(1:fit$burnin), ]
+colMeans(nu_mcmc)
 
 }

@@ -82,10 +82,10 @@
 #'
 #' Note that:
 #' (i) include an intercept column in \code{X}; none is added by default, and
-#' (ii) all \code{S_list} elements must be SPD. A small \code{ridge} may be 
+#' (ii) all \code{S_list} elements must be SPD. A small \code{ridge} may be
 #' added for stability.
-#' 
-#' 
+#'
+#'
 #' @return A list whose fields depend on \code{method}:
 #' \itemize{
 #'   \item For \code{method = "bayes"}:
@@ -133,49 +133,50 @@
 #' n <- 500 # subjects
 #' p <- 2
 #' # True gating coefficients (last column zero)
-#' set.seed(123) 
-#' Xq <- 3; K <- 3
+#' set.seed(123)
+#' Xq <- 3
+#' K <- 3
 #' betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
 #' betas[, K] <- 0
-#' dat <- simData(n, p, 
+#' dat <- simData(n, p,
 #'   Xq = 3, K = 3, betas = betas,
 #'   pis = c(0.35, 0.40, 0.25),
 #'   nus = c(8, 16, 3)
 #' )
-#' 
+#'
 #' set.seed(123)
 #' fit <- moewishart(
-#'   dat$S, X = cbind(1, dat$X), K = 3, 
+#'   dat$S,
+#'   X = cbind(1, dat$X), K = 3,
 #'   mh_sigma = c(0.2, 0.1, 0.1), # RW-MH variances (length K)
 #'   mh_beta = c(0.2, 0.2), # RW-MH variances (length K-1)
-#'   niter = 1000, burnin = 500
+#'   niter = 500, burnin = 200
 #' )
-#' 
-#' burnin <- 500
-#' # Posterior means for degrees of freedom of Wishart distributions: 
-#' nu_mcmc <- fit$nu[-c(1:burnin), ]
-#' colMeans(nu_mcmc) 
+#'
+#' # Posterior means for degrees of freedom of Wishart distributions:
+#' nu_mcmc <- fit$nu[-c(1:fit$burnin), ]
+#' colMeans(nu_mcmc)
 #'
 #' @export
 moewishart <- function(S_list,
-                        X, # n x q matrix of covariates for gating
-                        K,
-                        niter = 3000,
-                        burnin = 1000,
-                        method = "bayes",
-                        thin = 1,
-                        nu0 = NULL,
-                        Psi0 = NULL,
-                        init_nu = NULL,
-                        estimate_nu = TRUE,
-                        nu_prior_a = 2, nu_prior_b = 0.1,
-                        mh_sigma = 0.1,
-                        mh_beta = 0.05, # MH proposal sd for gating coeffs
-                        sigma_beta = 10, # Gaussian prior sd for beta
-                        init = NULL,
-                        tol = 1e-6,
-                        ridge = 1e-8,
-                        verbose = TRUE) {
+                       X, # n x q matrix of covariates for gating
+                       K,
+                       niter = 3000,
+                       burnin = 1000,
+                       method = "bayes",
+                       thin = 1,
+                       nu0 = NULL,
+                       Psi0 = NULL,
+                       init_nu = NULL,
+                       estimate_nu = TRUE,
+                       nu_prior_a = 2, nu_prior_b = 0.1,
+                       mh_sigma = 0.1,
+                       mh_beta = 0.05, # MH proposal sd for gating coeffs
+                       sigma_beta = 10, # Gaussian prior sd for beta
+                       init = NULL,
+                       tol = 1e-6,
+                       ridge = 1e-8,
+                       verbose = TRUE) {
   # Mixture-of-Experts Gibbs sampler for Wishart clusters
   #   S_list: list of n SPD matrices (p x p)
   #   X      : n x q covariate matrix for gating network (include intercept if desired)
@@ -194,18 +195,18 @@ moewishart <- function(S_list,
     p <- nrow(S_list[[1]])
     q <- ncol(X)
     if (n != nrow(X)) stop("Number of rows in X must equal length(S_list).")
-    
+
     if (length(mh_sigma) != K && length(mh_sigma) != 1) {
       stop("Argument 'mh_sigma' must have length 1 or K!")
-    } else if(length(mh_sigma) == 1) {
+    } else if (length(mh_sigma) == 1) {
       mh_sigma <- rep(mh_sigma, K)
     }
-    if (length(mh_beta) != K-1 && length(mh_beta) != 1) {
+    if (length(mh_beta) != K - 1 && length(mh_beta) != 1) {
       stop("Argument 'mh_beta' must have length 1 or K-1!")
-    } else if(length(mh_beta) == 1) {
-      mh_beta <- rep(mh_beta, K-1)
+    } else if (length(mh_beta) == 1) {
+      mh_beta <- rep(mh_beta, K - 1)
     }
-    
+
     # Priors / defaults
     if (is.null(nu0)) nu0 <- p + 2
     if (is.null(Psi0)) Psi0 <- diag(p)
@@ -241,7 +242,7 @@ moewishart <- function(S_list,
     pi_ik <- compute_pi_ik(X, Beta) # n x K
 
     # Storage
-    ##nsave <- floor((niter - burnin) / thin)
+    ## nsave <- floor((niter - burnin) / thin)
     nsave <- floor(niter / thin)
     if (nsave < 1) nsave <- 1
     out_beta <- array(NA, dim = c(nsave, q, K)) # store Beta at saves
@@ -258,13 +259,13 @@ moewishart <- function(S_list,
     logpost <- matrix(0, n, K)
     acc_count_nu <- numeric(K) # record acceptance counts of MH for nu
     acc_count_beta <- c(numeric(K - 1), NA) # record acceptance counts of MH for beta
-    free_idx_cols <- 1:(K-1)
-    
+    free_idx_cols <- 1:(K - 1)
+
     # Spike-and-slab indicators for Beta (q x (K-1))
-    #pi_gamma <- 0.5
-    #Gamma <- matrix(rbinom(q*(K-1), 1, pi_gamma), nrow = q, ncol = K-1)
-    #Gama_samples =  array(NA, dim = c(nsave, q, K-1))
-    
+    # pi_gamma <- 0.5
+    # Gamma <- matrix(rbinom(q*(K-1), 1, pi_gamma), nrow = q, ncol = K-1)
+    # Gama_samples =  array(NA, dim = c(nsave, q, K-1))
+
     # start_time <- Sys.time()
     for (iter in 1:niter) {
       # --- Step 1: compute log-likelihood parts per cluster (vectorized) ---
@@ -291,20 +292,20 @@ moewishart <- function(S_list,
         prob <- prob / sum(prob)
         z[i] <- sample.int(K, 1, prob = prob)
       }
-      
+
       # --- Step 3: update gating coefficients Beta via MH ---
       # We'll update the (K-1) free columns jointly (size q*(K-1)).
       # Flatten current free parameters
-      
-      #free_idx_cols <- 1:(K - 1)
-      
+
+      # free_idx_cols <- 1:(K - 1)
+
       # Update Beta columnwise
       for (free_idx_cols in 1:(K - 1)) {
         Beta_free <- as.vector(Beta[, free_idx_cols]) # length q*(K-1)
         prop <- Beta_free + rnorm(length(Beta_free), 0, mh_beta[free_idx_cols])
         Beta_prop <- Beta
-        Beta_prop[, free_idx_cols] <- prop#matrix(prop, nrow = q, ncol = K - 1)
-        #Beta_prop[, K] <- 0
+        Beta_prop[, free_idx_cols] <- prop # matrix(prop, nrow = q, ncol = K - 1)
+        # Beta_prop[, K] <- 0
         # compute new pi_ik (n x K)
         pi_prop <- compute_pi_ik(X, Beta_prop)
         # log prior for Beta (Gaussian iid)
@@ -321,11 +322,11 @@ moewishart <- function(S_list,
           acc_count_beta[free_idx_cols] <- acc_count_beta[free_idx_cols] + 1
         }
       }
-      
+
       # Identifiability constraint
       Beta[, K] <- 0
-      
-      
+
+
       # # --- Step 3b: update Gamma indicators (Gibbs) ---
       # # use exact posterior p(gamma=1 | beta) \propto pi_gamma * N(beta | 0, sigma_beta^2)
       # beta_cur <- Beta[, free_idx_cols]  # q x (K-1)
@@ -407,7 +408,7 @@ moewishart <- function(S_list,
       logliks_individual[iter, ] <- max_l + log(rowSums(row_sums))
 
       # --- Save samples after burnin and thinning ---
-      ##if (iter > burnin && ((iter - burnin) %% thin == 0)) {
+      ## if (iter > burnin && ((iter - burnin) %% thin == 0)) {
       if (iter %% thin == 0) {
         iter_save <- iter_save + 1
         if (iter_save <= nsave) {
@@ -425,14 +426,14 @@ moewishart <- function(S_list,
         # rate <- iter / elapsed
         cat(sprintf(
           "Iter %4d | LL=%.1f | acc_rate_nu=%.3f | acc_rate_beta=%.3f\n",
-          iter, logliks[iter], acc_count_nu / iter, #min(acc_count_nu / iter), max(acc_count_nu / iter),
-          acc_count_beta / iter #min(acc_count_beta / iter), max(acc_count_beta / iter)
+          iter, logliks[iter], acc_count_nu / iter, # min(acc_count_nu / iter), max(acc_count_nu / iter),
+          acc_count_beta / iter # min(acc_count_beta / iter), max(acc_count_beta / iter)
         ))
       }
     }
 
     # finalize posterior mean of pi
-    n_saved <- max(1, iter_save)
+    ##n_saved <- max(1, iter_save)
     out_pi_mean <- out_pi_mean / max(1, nsave) # average over saved iterations
 
     ret <- list(
@@ -442,9 +443,11 @@ moewishart <- function(S_list,
       z_samples = out_z,
       pi_ik = out_pi_ik,
       pi_mean = out_pi_mean,
-      loglik = logliks,
-      loglik_individual = logliks_individual
+      estimate_nu = estimate_nu,
+      burnin = burnin, niter = niter, thin = thin,
+      loglik = logliks, loglik_individual = logliks_individual
     )
+    class(ret) <- c("moewishart.bayes")
   }
 
   if (method == "em") {
@@ -453,6 +456,8 @@ moewishart <- function(S_list,
       S_list, X, K, maxit, tol, verbose,
       init, estimate_nu, init_nu, ridge
     )
+    ret$estimate_nu <- estimate_nu
+    class(ret) <- c("moewishart.em")
   }
 
   return(ret)
@@ -481,14 +486,13 @@ compute_pi_ik <- function(X, Beta) {
 # -- Internal function with EM algorithm for the Wishart mixture-of-experts model--
 
 moewishart.em <- function(S_list, X, K, maxit = 200, tol = 1e-6, verbose = TRUE,
-                           init = NULL, estimate_nu = FALSE, init_nu = NULL, ridge = 1e-8) {
+                          init = NULL, estimate_nu = FALSE, init_nu = NULL, ridge = 1e-8) {
   n <- length(S_list)
   p <- nrow(S_list[[1]])
   q <- ncol(X)
 
   # --- CORRECTION 1: BREAK SYMMETRY IN INITIALIZATION ---
 
-  pars <- list()
   if (is.null(init) || is.null(init$beta)) {
     beta_vec <- rep(0, q * (K - 1))
   } else {

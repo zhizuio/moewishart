@@ -97,7 +97,7 @@ Simulation steps:
         \code{rWishart}.
 }
 
-Note that: 
+Note that:
 (i) in the MoE case, no intercept is automatically added to \code{X}.
         Use \code{Xq} to include desired covariates; the default
         \code{betas} is randomly generated with \code{betas[, K] = 0}, and
@@ -110,7 +110,8 @@ Note that:
 set.seed(123)
 n <- 200 # subjects
 p <- 10
-dat <- simData(n, p, K = 3, 
+dat <- simData(n, p,
+  K = 3,
   pis = c(0.35, 0.40, 0.25),
   nus = c(8, 12, 3)
 )

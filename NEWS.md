@@ -4,6 +4,7 @@
 
 * Remove all Rcpp source code
 * Change main function names: `moewishart()` -> `mixturewishart()`, `moewishartX()` -> `moewishart()`
+* Add function `computeIC` to compute information criteria
 
 ### moewishart 0.3 (2026-01-15) (GitHub Only)
 

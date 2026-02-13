@@ -36,8 +36,8 @@ It contains 4 different algorithms for 2 model:
 Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart)
 
 ```{r eval=FALSE}
-#library("devtools")
-devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
+# library("devtools")
+devtools::install_github("zhizuio/moewishart", ref = "main", auth_token = "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")
 ```
 
 ## Example
@@ -67,7 +67,8 @@ set.seed(123)
 n <- 200 # number of subjects
 p <- 2 # dimension of covariance matrix
 set.seed(123) # fix coefficients of underlying MoE model
-Xq <- 3; K = 3
+Xq <- 3
+K <- 3
 betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
 betas[, K] <- 0
 
@@ -81,7 +82,8 @@ dat <- simData(n, p,
 # fit Bayesian MoE-Wishart model
 set.seed(123)
 fit <- moewishart(
-  dat$S, X = cbind(1, dat$X), K = 3, 
+  dat$S,
+  X = cbind(1, dat$X), K = 3,
   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances (length K)
   mh_beta = c(0.3, 0.3), # RW-MH variances (length K-1)
   niter = 3000, burnin = 1000
@@ -95,7 +97,7 @@ Posterior means for degrees of freedom (DoF) of Wishart distributions:
 ```{r}
 burnin <- 1000
 nu_mcmc <- fit$nu[-c(1:burnin), ]
-colMeans(nu_mcmc) 
+colMeans(nu_mcmc)
 ```
 
 <br> 
@@ -128,7 +130,8 @@ apply(beta_mcmc, c(2, 3), mean)
 # fit Bayesian Wishart mixture model
 set.seed(123)
 fit2 <- mixturewishart(
-  dat$S, K = 3, 
+  dat$S,
+  K = 3,
   mh_sigma = c(0.2, 0.1, 0.2), # RW-MH variances
   niter = 3000, burnin = 1000
 )
@@ -138,7 +141,7 @@ fit2 <- mixturewishart(
 Posterior means for subpopulation probabilities:
 
 ```{r}
-colMeans(fit2$pi[-c(1:burnin), ]) 
+colMeans(fit2$pi[-c(1:burnin), ])
 ```
 
 <br> 
@@ -146,7 +149,7 @@ colMeans(fit2$pi[-c(1:burnin), ])
 Posterior means for DoF of Wishart distributions:
 
 ```{r}
-colMeans(fit2$nu[-c(1:burnin), ]) 
+colMeans(fit2$nu[-c(1:burnin), ])
 ```
 
 
@@ -156,7 +159,8 @@ colMeans(fit2$nu[-c(1:burnin), ])
 # fit MoE-Wishart model via EM alg.
 set.seed(123)
 fit3 <- moewishart(
-  dat$S, X = cbind(1, dat$X), K = 3, 
+  dat$S,
+  X = cbind(1, dat$X), K = 3,
   method = "em",
   niter = 3000
 )
@@ -191,7 +195,8 @@ fit3$Beta
 # fit Wishart mixture model via EM alg.
 set.seed(123)
 fit4 <- mixturewishart(
-  dat$S, K = 3, 
+  dat$S,
+  K = 3,
   method = "em",
   niter = 3000
 )

@@ -39,15 +39,15 @@ and scale matrix \eqn{\Sigma} (SPD). The density is:
        {2^{\nu p/2}\,|\Sigma|^{\nu/2}\,\Gamma_p(\nu/2)},
 }
 where \eqn{\Gamma_p(\cdot)} is the multivariate gamma function and
-\eqn{p} is the dimension. 
+\eqn{p} is the dimension.
 
-Note that 
-(i) \code{detS_val} can be supplied to avoid recomputing \eqn{\log|S|}, 
- which is useful inside EM/MCMC loops, and 
- (ii) small diagonal jitter is added internally to \eqn{S} and \eqn{\Sigma} 
+Note that
+(i) \code{detS_val} can be supplied to avoid recomputing \eqn{\log|S|},
+ which is useful inside EM/MCMC loops, and
+ (ii) small diagonal jitter is added internally to \eqn{S} and \eqn{\Sigma}
  when computing determinants or solves for numerical stability.
 
-Constraints: (i) \eqn{S} and \eqn{\Sigma} must be SPD, and (ii) the Wishart 
+Constraints: (i) \eqn{S} and \eqn{\Sigma} must be SPD, and (ii) the Wishart
 requires \eqn{\nu > p - 1}.
 }
 \examples{
@@ -55,7 +55,7 @@ requires \eqn{\nu > p - 1}.
 set.seed(123)
 p <- 3
 # Construct an SPD Sigma
-A <- matrix(rnorm(p*p), p, p)
+A <- matrix(rnorm(p * p), p, p)
 Sigma <- crossprod(A) + diag(p) * 0.5
 # Draw a Wishart matrix using base stats::rWishart()
 W <- drop(rWishart(1, df = p + 5, Sigma = Sigma))

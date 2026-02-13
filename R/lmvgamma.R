@@ -20,8 +20,8 @@
 #'   = \pi^{\,p(p-1)/4} \prod_{j=1}^{p} \Gamma\!\left(a + \frac{1-j}{2}\right).
 #' }
 #'
-#' Constraints: (i) \eqn{p \in \{1,2,\dots\}} (positive integer), and 
-#'   (ii) \eqn{a > (p-1)/2} to keep all gamma terms finite (as in the Wishart 
+#' Constraints: (i) \eqn{p \in \{1,2,\dots\}} (positive integer), and
+#'   (ii) \eqn{a > (p-1)/2} to keep all gamma terms finite (as in the Wishart
 #'   normalization constant).
 #'
 #'
@@ -34,7 +34,7 @@
 #' p <- 3
 #' # Evaluate log multivariate gamma at a = nu/2
 #' nu <- p + 5
-#' lmvgamma(a = nu/2, p = p)
+#' lmvgamma(a = nu / 2, p = p)
 #'
 #' @export
 lmvgamma <- function(a, p) {

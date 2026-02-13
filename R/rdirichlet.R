@@ -16,7 +16,7 @@
 #'
 #'
 #' @details
-#' Definition: 
+#' Definition:
 #'  If \eqn{Y_k \sim \mathrm{Gamma}(\alpha_k, 1)} independently for
 #'         \eqn{k=1,\dots,K} (shape \eqn{\alpha_k}, rate 1), then the
 #'         normalized vector \eqn{X_k = Y_k / \sum_{j=1}^K Y_j} follows
@@ -24,7 +24,7 @@
 #'
 #' Note that
 #'  \code{alpha} must be a numeric vector with strictly positive entries.
-#' 
+#'
 #'
 #' @return A numeric matrix of size \eqn{n \times K}, where each row is
 #'   an independent Dirichlet draw that sums to \eqn{1}.
