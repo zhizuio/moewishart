@@ -79,9 +79,12 @@ drug_class <- data.frame(Drugs = names(S_list))
 digits0 <- 2
 for (i in 1:10) {
 
+  # total number of estimated parameters
+  kk <- K[i] * (p*(p+1)/2+1) + (K[i]-1) * (q+1)
+
   # results of mixture model via EM
-  aic <- -2 * mean(fitEM[[i]]$loglik) + 2 * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * 1)
-  bic <- -2 * mean(fitEM[[i]]$loglik) + log(n) * (K[i] * (p*(p+1)/2+1) + (K[i]-1) * q)
+  aic <- -2 * mean(fitEM[[i]]$loglik) + 2 * kk
+  bic <- -2 * mean(fitEM[[i]]$loglik) + log(n) * kk
   nu12 <- round(fitEM[[i]]$nu, digits = digits0)
   sigma12 <- round(unlist(lapply(fitEM[[i]]$Sigma, function(xx) xx[1])), digits = digits0)
   pi12 <- round(fitEM[[i]]$pi, digits = digits0)
@@ -100,8 +103,8 @@ for (i in 1:10) {
 
   # results of MoE model via EM
   loglik <- fitEM_MoE[[i]]$loglik[length(fitEM_MoE[[i]]$loglik)]
-  aic <- -2 * loglik + 2 * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
-  bic <- -2 * loglik + log(n) * (K[i] + p*(p+1)/2 + (K[i]-1)*(q+1)) 
+  aic <- -2 * loglik + 2 * kk
+  bic <- -2 * loglik + log(n) * kk
   nu12 <- round(fitEM_MoE[[i]]$nu, digits = digits0)
   sigma12 <- round(unlist(lapply(fitEM_MoE[[i]]$Sigma, function(xx) xx[1])), digits = digits0)
   beta12 <- round(fitEM_MoE[[i]]$Beta[1, ], digits = digits0)
