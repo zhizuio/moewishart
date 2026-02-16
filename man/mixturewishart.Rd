@@ -183,7 +183,7 @@ fit <- mixturewishart(
   dat$S,
   K = 3,
   mh_sigma = c(0.2, 0.1, 0.1), # tune this for MH acceptance 20-40\%
-  niter = 1000, burnin = 500
+  niter = 100, burnin = 50
 )
 
 # Posterior means for degrees of freedom of Wishart distributions:
