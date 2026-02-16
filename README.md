@@ -24,7 +24,7 @@ Install the latest development version from [GitHub](https://github.com/zhizuio/
 
 ``` r
 #library("devtools")
-devtools::install_github("zhizuio/moewishart", ref="main", auth_token = "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")
+devtools::install_github("zhizuio/moewishart")
 ```
 
 ## Example
