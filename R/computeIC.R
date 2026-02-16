@@ -66,20 +66,6 @@
 #'
 #' @examples
 #'
-#' # EM example (mixture model)
-#'
-#' # simulate data
-#' set.seed(123)
-#' n <- 500 # subjects
-#' p <- 2
-#' dat <- simData(n, p,
-#'   K = 3,
-#'   pis = c(0.35, 0.40, 0.25),
-#'   nus = c(8, 16, 3)
-#' )
-#' fit <- mixturewishart(dat$S, K = 3, method = "em")
-#' computeIC(fit)
-#'
 #' # Bayesian example (MoE)
 #'
 #' # simulate data
