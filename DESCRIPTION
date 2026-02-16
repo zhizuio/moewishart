@@ -1,7 +1,7 @@
 Package: moewishart
-Title: Mixture of Experts of Wishart Model for Covariance Data
-Version: 0.4
-Description: MLE and Bayesian estimation for the mixture and mixture of experts of Wishart.
+Title: Mixture-of-Experts Wishart Models for Covariance Data
+Version: 1.0
+Description: Methods for maximum likelihood and Bayesian estimation for the Wishart mixture model and the mixture-of-experts Wishart (MoE-Wishart) model. The package provides four inference algorithms for these models, each implemented using the expectation–maximization (EM) algorithm for maximum likelihood estimation and a fully Bayesian approach via Gibbs-within-Metropolis–Hastings sampling.
 Authors@R: c(person("The Tien", "Mai", role=c("aut")),
                 person("Zhi", "Zhao", role=c("aut","cre"), email = "zhi.zhao@medisin.uio.no"))
 Maintainer: Zhi Zhao <zhi.zhao@medisin.uio.no> 

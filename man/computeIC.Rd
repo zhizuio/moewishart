@@ -105,7 +105,7 @@ fit <- moewishart(
   X = cbind(1, dat$X), K = 3,
   mh_sigma = c(0.2, 0.1, 0.1), # RW-MH variances (length K)
   mh_beta = c(0.2, 0.2), # RW-MH variances (length K-1)
-  niter = 500, burnin = 200
+  niter = 100, burnin = 50
 )
 computeIC(fit)
 

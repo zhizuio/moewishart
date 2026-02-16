@@ -4,22 +4,22 @@
 -->
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 
-# moewishart: Mixture-of-Experts Wishart models for covariance data
+## 1. Mixture-of-Experts Wishart models for covariance data
 
-This R-package `moewishart` provides maximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
-It contains 4 different algorithms for 2 model:
+This R-package `moewishart` provides maximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and the **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
+It implements four different inference algorithms for the two model:
 
 - mixture model of Wishart distributions:
     - EM algorithm for finding the MLE;
     - Bayesian approach using Gibbs-within-MH sampling algorithm.
-- Mixture-of-Expert model, in which the probability gating can depend on covariate(s):
+- Mixture-of-Expert model, in which the gating probabilities depend on covariates:
    - EM-MoE algorithm for finding the MLE;
-   - Bayesian-MoE approach using Gibbs-within-MH sampling algorithm.  
+   - Bayesian-MoE approach using a Gibbs-within-MH sampling algorithm.  
 
 
-## Installation
+## 2. Installation
 
-Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart)
+Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart):
 
 
 ``` r
@@ -27,7 +27,7 @@ Install the latest development version from [GitHub](https://github.com/zhizuio/
 devtools::install_github("zhizuio/moewishart")
 ```
 
-## Example
+## 3. Example: data generating process
 
 
 <br> 
@@ -41,14 +41,13 @@ Data simulation from a MoE-Wishart model:
 - Fixed covariate effects $\boldsymbol\beta=[\boldsymbol\beta_1,...,\boldsymbol\beta_K] \in \mathbb R^{q\times K}$, with $\boldsymbol\beta_{K}=0$
 - Probabilities of subpopulations $\boldsymbol\pi = [\pi_{ik}] \in \mathbb R^{n\times q}$, $\pi_{ik} = \exp(\mathbf X_i\boldsymbol\beta_k) / \sum_{l=1}^K\exp(\mathbf X_i\boldsymbol\beta_l)$, $k=1,...,K$
 - Degrees of freedom $\boldsymbol\nu = (\nu_1,\nu_2,\nu_3) = (8, 12, 3)$
-- Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_3$, $\Sigma_3 \in \mathbb R^{p\times p}$
-- Data $S_i \sim \pi_1\text{Wishart}(\nu_1, \Sigma_1) + \pi_2\text{Wishart}(\nu_2, \Sigma_2) + \pi_3\text{Wishart}(\nu_3, \Sigma_3)$
+- Scale matrices of the Wishart distribution $\Sigma_1$, $\Sigma_2$, $\Sigma_3 \in \mathbb R^{p\times p}$
+- Data $S_i \sim \pi_{i1}\text{Wishart}(\nu_1, \Sigma_1) + \pi_{i2}\text{Wishart}(\nu_2, \Sigma_2) + \pi_{i3}\text{Wishart}(\nu_3, \Sigma_3)$
 
 
 ``` r
 library(moewishart)
 
-set.seed(123)
 n <- 200 # number of subjects
 p <- 2 # dimension of covariance matrix
 set.seed(123) # fix coefficients of underlying MoE model
@@ -64,8 +63,9 @@ dat <- simData(n, p,
 )
 ```
 
+## 4. Model fitting examples 
 
-### 1. Working model: Bayesian MoE-Wishart model
+### 4.1 Bayesian MoE-Wishart model
 
 
 ``` r
@@ -80,7 +80,7 @@ fit <- moewishart(
 ```
 
 
-### 2. Working model: Bayesian Wishart mixture model
+### 4.2 Bayesian Wishart mixture model
 
 
 ``` r
@@ -94,7 +94,7 @@ fit2 <- mixturewishart(
 ```
 
 
-### 3. Working model: MoE-Wishart model via EM algorithm
+### 4.3 EM for MoE-Wishart
 
 
 ``` r
@@ -108,7 +108,7 @@ fit3 <- moewishart(
 ```
 
 
-### 4. Working model: Wishart mixture model via EM algorithm
+### 4.4 EM for Wishart mixture
 
 
 ``` r
@@ -122,8 +122,4 @@ fit4 <- mixturewishart(
 ```
 
 
-
-## References
-
-The Tien Mai, Zhi Zhao (2026). xxxx
 
