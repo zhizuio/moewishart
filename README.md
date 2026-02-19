@@ -121,5 +121,9 @@ fit4 <- mixturewishart(
 )
 ```
 
+## References
 
+> The Tien Mai, Zhi Zhao (2026).
+> Mixture-of-experts Wishart model for covariance matrices with an application to Cancer drug screening.
+> _arXiv_. DOI: [arXiv.2602.13888](https://doi.org/10.48550/arXiv.2602.13888).
 
