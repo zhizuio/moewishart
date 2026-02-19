@@ -1,13 +1,13 @@
-<!-- badges: 
-[![r-universe](https://ocbe-uio.r-universe.dev/badges/moewishart)](https://ocbe-uio.r-universe.dev/moewishart)
--->
 [![CRAN
 status](https://www.r-pkg.org/badges/version/moewishart)](https://cran.r-project.org/package=moewishart)
+[![r-universe](https://zhizuio.r-universe.dev/badges/moewishart)](https://zhizuio.r-universe.dev/moewishart)
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.moewishart-brightgreen)](https://doi.org/10.32614/CRAN.package.moewishart)
 
-## 1. Mixture-of-Experts Wishart models for covariance data
+# Mixture-of-Experts Wishart models for covariance data
+
+## 1. Introduction
 
 This R-package `moewishart` provides maximum likelihood estimation (MLE) and Bayesian estimation for the **Wishart mixture model** and the **Wishart mixture-of-experts** (**MoE-Wishart**) model. 
 It implements four different inference algorithms for the two model:
