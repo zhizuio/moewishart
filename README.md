@@ -22,8 +22,14 @@ It implements four different inference algorithms for the two model:
 
 ## 2. Installation
 
-Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart):
+Install the latest released version from [CRAN](https://CRAN.R-project.org/package=moewishart)
 
+```r
+install.packages("moewishart")
+```
+
+
+Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart):
 
 ``` r
 #library("devtools")
