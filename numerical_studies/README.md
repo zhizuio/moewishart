@@ -1,6 +1,6 @@
 # Numerical studies
 
-This folder is for the results in the paper *MMixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening* by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
+This folder is for the results in the paper *Mixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening* by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
 
 # Data
 ## Abstract
