@@ -19,12 +19,10 @@ We developed an R package `moewishart` which is available on the [GitHub](https:
 No restrictions.
 
 # Code 
-## Abstract
 
 We are including all of the code that will enable reproducing our simulation results.
 
-# Instructions for Use
-## Reproducibility of simulations
+# Instructions for Use and Reproducibility of simulations
 
 Tables 1-2 and Figures 1-2 can be reproduced through the provided code. The general steps are:
 
