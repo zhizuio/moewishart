@@ -1,11 +1,11 @@
 # Numerical studies
 
-This folder is for the results in the paper *Mixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening* by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
+This folder is for the results in the paper "Mixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening" by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
 
 # Data
-## Abstract
 
 The main data contain simulated data and real data. 
+
 The real data is the Cancer Therapeutics Response Portal (CTRP v2, 2015) (Seashore-Ludlow et al., 2015) which is publicly available at 
 ```diff
 https://ocg.cancer.gov/programs/ctd2/data-portal
