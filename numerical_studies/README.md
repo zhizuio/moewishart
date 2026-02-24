@@ -12,7 +12,7 @@ https://ocg.cancer.gov/programs/ctd2/data-portal
 ```
 
 ## New R package
-We developed an R package `moewishart` which is available on the [GitHub](https://github.com/zhizuio/moewishart/) for implementing our methods. 
+We developed an R package `moewishart` which is available on the [GitHub](https://github.com/zhizuio/moewishart/) and CRAN for implementing our methods. 
 
 ## Availability
 
