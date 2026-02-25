@@ -14,4 +14,5 @@ Encoding: UTF-8
 RoxygenNote: 7.3.2
 Imports: utils, stats, loo
 Suggests: rmarkdown, knitr
+LazyData: true
 NeedsCompilation: no
