@@ -1,0 +1,25 @@
+bibentry("Manual",
+  title = "{{moewishart: Mixture-of-Experts Wishart Models for Covariance Data}}",
+  author = c(person(given = "The Tien",
+                          family = "Mai"),
+              person(given = "Zhi",
+                          family = "Zhao",
+                          email = "zhi.zhao@medisin.uio.no")),
+  year = 2026,
+  note = "R package version 1.0",
+  doi  = "10.32614/CRAN.package.moewishart",
+  header  = "To cite moewishart in publications use:"
+)
+
+
+bibentry(bibtype = "Misc",
+  title       = "Mixture-of-experts Wishart model for covariance matrices with an application to Cancer drug screening",
+  author      = c(person(given = "The Tien",
+                          family = "Mai"),
+                     person(given = "Zhi",
+                          family = "Zhao")),
+  year = "2026",
+  note = "arXiv:2602.13888",
+  doi  = "10.48550/arXiv.2602.13888",
+  header  = "To cite moewishart in publications use:"
+)
