@@ -1,6 +1,6 @@
 # Numerical studies
 
-This folder is for the results in the paper ``Mixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening'' by 'Mai T. T., Zhao Z. (2026+)' [arXiv:](https://arxiv.org/abs/).
+This folder is for the results in the paper ``Mixture of experts Wishart model for covariance data: applications to Stock markets and Cancer drug screening'' by Mai T. T., Zhao Z. (2026) [arXiv.2602.13888](https://doi.org/10.48550/arXiv.2602.13888).
 
 # Data
 
@@ -12,7 +12,7 @@ https://ocg.cancer.gov/programs/ctd2/data-portal
 ```
 
 ## New R package
-We developed an R package `moewishart` which is available on the [GitHub](https://github.com/zhizuio/moewishart/) and CRAN for implementing our methods. 
+We developed an R package `moewishart` which is available on the [GitHub](https://github.com/zhizuio/moewishart/) and [CRAN](https://CRAN.R-project.org/package=moewishart) for implementing our methods. 
 
 ## Availability
 
