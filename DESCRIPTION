@@ -12,7 +12,7 @@ VignetteBuilder: knitr
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-Imports: utils, stats, loo
+Imports: loo, stats, utils, graphics
 Suggests: rmarkdown, knitr
 LazyData: true
 NeedsCompilation: no

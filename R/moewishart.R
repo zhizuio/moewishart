@@ -92,9 +92,9 @@
 #'     \itemize{
 #'       \item \code{Beta_samples}: array (\code{nsave} x \code{q} x
 #'             \code{K}), saved draws of \eqn{B} (last column zero).
-#'       \item \code{nu_samples}: matrix (\code{nsave} x \code{K}), draws
+#'       \item \code{nu}: matrix (\code{nsave} x \code{K}), draws
 #'             of \eqn{\nu_k}.
-#'       \item \code{Sigma_samples}: list of length \code{nsave}; each
+#'       \item \code{Sigma}: list of length \code{nsave}; each
 #'             element is an array (\eqn{p \times p \times K}) of
 #'             \eqn{\Sigma_k} draws.
 #'       \item \code{z_samples}: matrix (\code{nsave} x \code{n}), draws
@@ -438,8 +438,8 @@ moewishart <- function(S_list,
 
     ret <- list(
       Beta_samples = out_beta,
-      nu_samples = out_nu,
-      Sigma_samples = out_Sigma,
+      nu = out_nu,
+      Sigma = out_Sigma,
       z_samples = out_z,
       pi_ik = out_pi_ik,
       pi_mean = out_pi_mean,

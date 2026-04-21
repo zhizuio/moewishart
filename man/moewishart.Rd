@@ -94,9 +94,9 @@ A list whose fields depend on \code{method}:
     \itemize{
       \item \code{Beta_samples}: array (\code{nsave} x \code{q} x
             \code{K}), saved draws of \eqn{B} (last column zero).
-      \item \code{nu_samples}: matrix (\code{nsave} x \code{K}), draws
+      \item \code{nu}: matrix (\code{nsave} x \code{K}), draws
             of \eqn{\nu_k}.
-      \item \code{Sigma_samples}: list of length \code{nsave}; each
+      \item \code{Sigma}: list of length \code{nsave}; each
             element is an array (\eqn{p \times p \times K}) of
             \eqn{\Sigma_k} draws.
       \item \code{z_samples}: matrix (\code{nsave} x \code{n}), draws

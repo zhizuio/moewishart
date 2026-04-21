@@ -71,9 +71,9 @@ for (n in n_all) {
     ess.MoE.nu[i, ] <- coda::effectiveSize(as.mcmc(fit$MoEfitBayes$nu[-c(1:burnin),BayesOrder]))
     
     ## extract the first Sigma's entry from each of the 3 components
-    Sigmas <- cbind(unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[1]])), 
-                    unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[2]])), 
-                    unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[3]])) )
+    Sigmas <- cbind(unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[1]])), 
+                    unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[2]])), 
+                    unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[3]])) )
     ess.MoE.Sigma[i, ] <- coda::effectiveSize(as.mcmc(Sigmas))
     
     if( dim(fit$MoEfitBayes$Beta_samples)[2] > 1 ) {
@@ -161,9 +161,9 @@ for (n in n_all) {
     ess.MoE.nu[i, ] <- coda::effectiveSize(as.mcmc(fit$MoEfitBayes$nu[-c(1:burnin),BayesOrder]))
     
     ## extract the first Sigma's entry from each of the 3 components
-    Sigmas <- cbind(unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[1]])), 
-                    unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[2]])), 
-                    unlist(lapply(fit$MoEfitBayes$Sigma_samples[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[3]])) )
+    Sigmas <- cbind(unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[1]])), 
+                    unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[2]])), 
+                    unlist(lapply(fit$MoEfitBayes$Sigma[-c(1:burnin)], function(xx) xx[1, 1, BayesOrder[3]])) )
     ess.MoE.Sigma[i, ] <- coda::effectiveSize(as.mcmc(Sigmas))
     
     if( dim(fit$MoEfitBayes$Beta_samples)[2] > 1 ) {
