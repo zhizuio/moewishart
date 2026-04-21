@@ -1,8 +1,8 @@
-<!-- badges: 
-[![r-universe](https://ocbe-uio.r-universe.dev/badges/moewishart)](https://ocbe-uio.r-universe.dev/moewishart)
-[![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
--->
+[![CRAN
+status](https://www.r-pkg.org/badges/version/moewishart)](https://cran.r-project.org/package=moewishart)
+[![r-universe](https://zhizuio.r-universe.dev/badges/moewishart)](https://zhizuio.r-universe.dev/moewishart)
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
+[![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
 
