@@ -19,6 +19,13 @@ It implements four different inference algorithms for the two model:
 
 ## Installation
 
+Install the latest released version from [CRAN](https://CRAN.R-project.org/package=moewishart):
+
+
+``` r
+install.packages("BayesSUR")
+```
+
 Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart):
 
 
