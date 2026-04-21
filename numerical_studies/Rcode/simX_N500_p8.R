@@ -19,10 +19,10 @@ p <- 8 # covariance dimension
 K <- 3 # number of mixture components
 n_sim <- 100 # number of simulations
 
-
 make_pd_AR <- function(p, rho = 0.2) {
   Sigma <- outer(1:p, 1:p, function(i, j)rho^abs(i - j))
 }
+
 set.seed(123) # fix coefficients of underlying MoE model
 Xq <- 3; K = 3
 betas <- matrix(runif(Xq * K, -2, 2), nrow = Xq, ncol = K)
