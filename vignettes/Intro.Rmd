@@ -12,8 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
 options(rmarkdown.html_vignette.check_title = FALSE)
 ```
 
-[![CRAN
-status](https://www.r-pkg.org/badges/version/moewishart)](https://cran.r-project.org/package=moewishart)
+[![CRAN](https://www.r-pkg.org/badges/version/moewishart)](https://cran.r-project.org/package=moewishart)
 [![r-universe](https://zhizuio.r-universe.dev/badges/moewishart)](https://zhizuio.r-universe.dev/moewishart)
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -36,7 +35,7 @@ It implements four different inference algorithms for the two model:
 Install the latest released version from [CRAN](https://CRAN.R-project.org/package=moewishart):
 
 ```{r eval=FALSE}
-install.packages("BayesSUR")
+install.packages("moewishart")
 ```
 
 Install the latest development version from [GitHub](https://github.com/zhizuio/moewishart):
@@ -220,6 +219,14 @@ EM estimate for Wishart scale matrices:
 ```{r}
 fit4$Sigma
 ```
+
+
+## Reference
+
+Mai TT, Zhao Z (2026). 
+Mixture-of-experts Wishart model for covariance matrices with an application to Cancer drug screening. 
+[arXiv:2602.13888](https://doi.org/10.48550/arXiv.2602.13888).
+
 
 
 

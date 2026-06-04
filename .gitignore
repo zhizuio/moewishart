@@ -8,6 +8,8 @@ test_build*.R
 *.knit.*
 results
 tmp
+README.html
+README.Rmd
 src/Makevars
 src/*.o
 src/*.so

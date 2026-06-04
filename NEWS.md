@@ -1,5 +1,10 @@
 <div style="text-align: left;">
 
+### moewishart 1.2 (2026-06-04) 
+
+* Fix typos
+* Update README and vignette
+
 ### moewishart 1.1 (2026-04-21) 
 
 * Add `inst/CITATION`

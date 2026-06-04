@@ -3,6 +3,8 @@
 ^results/
 ^numerical_studies/
 ^\.github$
+^README.html$
+^README.Rmd$
 ^LICENSE$
 ^.*\.pdf$
 ^.*\.Rproj$
