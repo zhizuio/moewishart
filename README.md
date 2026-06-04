@@ -6,6 +6,8 @@
 [![R-CMD-check](https://github.com/zhizuio/moewishart/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/moewishart/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+# Mixture-of-Experts Wishart models
+
 This R-package `moewishart` provides maximum likelihood estimation (MLE)
 and Bayesian estimation for the **Wishart mixture model** and the
 **Wishart mixture-of-experts** (**MoE-Wishart**) model. It implements
